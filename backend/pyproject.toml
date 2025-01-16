@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "urag"
+version = "0.1.0"
+description = "Local RAGfor personal document search and querying"
+authors = ["Zhijin Fang <daniel.zhijin.fang@gmail.com>"]
+license = "MIT"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.109.0"
+uvicorn = "^0.27.0"
+langchain = "^0.1.0"
+python-multipart = "^0.0.6"
+pymilvus = "^2.3.4"
+python-dotenv = "^1.0.0"
+openai = "^1.10.0"
+pypdf = "^3.9.0"
+python-docx = "^1.1.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.1.0"
+isort = "^5.13.0"
+pytest = "^8.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
