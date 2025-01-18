@@ -18,12 +18,20 @@ python-dotenv = "^1.0.0"
 openai = "^1.10.0"
 pypdf = "^3.9.0"
 python-docx = "^1.1.0"
+pydantic = "^2.6.1"
+pydantic-settings = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.1.0"
 isort = "^5.13.0"
 pytest = "^8.0.0"
+pytest-asyncio = "^0.23.5"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]

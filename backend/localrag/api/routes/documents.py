@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 
 from localrag.core.document_processor import DocumentProcessor
-
+from localrag.core.vector_store import get_milvus
 load_dotenv()
 
 router = APIRouter()
@@ -44,12 +44,14 @@ async def upload_document(file: UploadFile = File(...),
         
         chunks, embeddings = await processor.process_and_embed(file_path)
 
+        engine = get_milvus()
+        ids = engine.add(chunks, embeddings)
+
         return {
             "status": "success",
             "filename": file.filename,
-            "path": str(file_path),
+            "document_ids": ids,
             "chunks": len(chunks),
-            "embeddings_dim": len(embeddings[0]) if embeddings else 0
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

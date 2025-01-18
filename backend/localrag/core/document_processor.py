@@ -17,6 +17,7 @@ class DocumentProcessor:
             length_function=len,
             separators=["\n\n", "\n", " ", ""]
         )
+        
 
     def read_pdf(self, file_path: Path) -> List[Dict]:
         with open(file_path, 'rb') as file:
