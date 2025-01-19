@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
+import { ChatHistory } from "@/components/ChatHistory";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -44,11 +46,18 @@ export default function RootLayout({
             </div>
           </div>
         </nav>
-        <main className="min-h-screen bg-gray-50">
-          <div className="container mx-auto px-4 py-8">
-            {children}
-          </div>
-        </main>
+        <div className="flex">
+          <ChatHistory 
+            onSelectChat={(chatId) => console.log('Selected chat:', chatId)}
+            onNewChat={() => console.log('New chat')}
+          />
+          <main className="flex-1 min-h-screen bg-gray-50 ml-[64px]">
+            <div className="container mx-auto px-4 py-8">
+              {children}
+            </div>
+          </main>
+        </div>
+        <Toaster />
       </body>
     </html>
   );

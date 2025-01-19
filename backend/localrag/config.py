@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     api_port: int = 8000
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # MongoDB settings
+    mongodb_url: str = "mongodb://localhost:27017"
+    mongodb_db_name: str = "uragchat"
+
     model_config = ConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
 @lru_cache()

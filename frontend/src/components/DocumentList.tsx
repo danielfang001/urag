@@ -1,40 +1,72 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { DocumentPreview } from "./DocumentPreview";
-
-type Document = {
-  id: string;
-  name: string;
-  uploadDate: string;
-  size: string;
-  type: string;
-  content?: string; // We'll fetch this when needed
-};
-
-// Temporary mock data
-const mockDocuments: Document[] = [
-  {
-    id: '1',
-    name: 'example.pdf',
-    uploadDate: '2024-03-14',
-    size: '2.4 MB',
-    type: 'PDF',
-    content: 'This is a sample document content...'
-  },
-  // Add more mock documents as needed
-];
+import { api, Document } from '@/lib/api';
+import { useToast } from "@/hooks/use-toast";
 
 export function DocumentList() {
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const handlePreview = (doc: Document) => {
-    setSelectedDoc(doc);
-    setIsPreviewOpen(true);
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = async () => {
+    try {
+      const docs = await api.getDocuments();
+      setDocuments(docs);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load documents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handlePreview = async (doc: Document) => {
+    try {
+      const content = await api.getDocumentContent(doc.id);
+      setSelectedDoc({ ...doc, content });
+      setIsPreviewOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load document content",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await api.deleteDocument(id);
+      setDocuments(docs => docs.filter(d => d.id !== id));
+      toast({
+        title: "Success",
+        description: "Document deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete document",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading...</div>;
+  }
 
   return (
     <>
@@ -47,7 +79,7 @@ export function DocumentList() {
         </div>
         
         <div className="divide-y">
-          {mockDocuments.map((doc) => (
+          {documents.map((doc) => (
             <div key={doc.id} className="grid grid-cols-5 gap-4 p-4 items-center">
               <div className="col-span-2">
                 <button
@@ -61,7 +93,12 @@ export function DocumentList() {
               <div className="text-gray-500">{doc.size}</div>
               <div className="text-gray-500 flex items-center justify-between">
                 {new Date(doc.uploadDate).toLocaleDateString()}
-                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-red-500 hover:text-red-600"
+                  onClick={() => handleDelete(doc.id)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
