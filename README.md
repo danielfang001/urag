@@ -11,6 +11,7 @@ URAG is a desktop application that enables users to create their personal docume
 - 🔑 **BYO API Key**: Use your own OpenAI API key
 - 📊 **Vector Database**: Efficient similarity search using Milvus
 - 🎯 **Source Citations**: Get references to specific documents and passages
+- 📓 **Easy Use**: Runs like Jupyter Notebook
 
 ## Tech Stack
 
