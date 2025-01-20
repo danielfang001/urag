@@ -18,7 +18,6 @@ class MongoDB:
 
 db = MongoDB()
 
-# Collection helpers
 async def get_chat_collection():
     return db.db.chats
 

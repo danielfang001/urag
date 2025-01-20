@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { User, Bot } from 'lucide-react';
+import { TypingAnimation } from './TypingAnimation';
 
 interface SearchResultProps {
   query: string;
@@ -17,10 +19,12 @@ interface SearchResultProps {
 }
 
 export function SearchResult({ query, response }: SearchResultProps) {
+  const [showSources, setShowSources] = useState(false);
+
   if (!query) return null;
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
+    <div className="space-y-4 max-w-3xl mx-auto px-4">
       {/* User Query */}
       <div className="bg-white p-6 rounded-lg">
         <div className="flex gap-4">
@@ -41,14 +45,19 @@ export function SearchResult({ query, response }: SearchResultProps) {
               <Bot className="w-5 h-5 text-blue-600" />
             </div>
             <div className="flex-1 space-y-4">
-              {/* Main Answer */}
+              {/* Main Answer with Typing Animation */}
               <div className="prose max-w-none">
-                <p className="text-gray-900">{response.answer}</p>
+                <p className="text-gray-900">
+                  <TypingAnimation 
+                    text={response.answer}
+                    onComplete={() => setShowSources(true)}
+                  />
+                </p>
               </div>
 
-              {/* Sources */}
-              {response.sources.length > 0 && (
-                <div className="border-t pt-4 mt-4">
+              {/* Sources - Show immediately after typing is complete */}
+              {showSources && response.sources.length > 0 && (
+                <div className="mt-4 animate-fade-in">
                   <p className="text-sm font-medium text-gray-700 mb-2">Sources:</p>
                   <div className="space-y-2">
                     {response.sources.map((source, index) => (

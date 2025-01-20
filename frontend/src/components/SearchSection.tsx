@@ -5,26 +5,25 @@ import { SearchResult } from './SearchResult';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 
-// Mock response for testing
 const mockResponse = {
-  answer: "Based on the provided documents, the key benefits of regular exercise include improved cardiovascular health, enhanced mental well-being, better sleep quality, and increased energy levels. Regular physical activity helps strengthen the heart, reduce stress and anxiety, regulate sleep patterns, and boost overall stamina.",
-  sources: [
-    {
-      content: "Regular exercise has been shown to significantly improve cardiovascular health by strengthening the heart muscle and improving circulation.",
-      metadata: {
-        filename: "health_benefits.pdf",
-        page: 12
+    answer: "Based on the provided documents, the key benefits of regular exercise include improved cardiovascular health, enhanced mental well-being, better sleep quality, and increased energy levels. Regular physical activity helps strengthen the heart, reduce stress and anxiety, regulate sleep patterns, and boost overall stamina.",
+    sources: [
+      {
+        content: "Regular exercise has been shown to significantly improve cardiovascular health by strengthening the heart muscle and improving circulation.",
+        metadata: {
+          filename: "health_benefits.pdf",
+          page: 12
+        }
+      },
+      {
+        content: "Studies indicate that physical activity releases endorphins, which help reduce stress and anxiety while improving overall mental well-being.",
+        metadata: {
+          filename: "mental_health.pdf",
+          page: 5
+        }
       }
-    },
-    {
-      content: "Studies indicate that physical activity releases endorphins, which help reduce stress and anxiety while improving overall mental well-being.",
-      metadata: {
-        filename: "mental_health.pdf",
-        page: 5
-      }
-    }
-  ]
-};
+    ]
+  };
 
 export function SearchSection() {
   const [query, setQuery] = useState('');
@@ -49,31 +48,33 @@ export function SearchSection() {
     }
   };
 
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+    setQuery(e.target.value);
+  };
+
   if (!hasSearched) {
     return (
       <div className="h-[100vh] flex flex-col items-center justify-center -mt-16">
         <div className="max-w-3xl w-full space-y-6 text-center px-4">
           <h1 className="text-4xl font-bold text-gray-900">Document Search</h1>
           <p className="text-lg text-gray-600">Ask questions about your documents</p>
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto w-full">
-            <div className="flex gap-2">
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto w-full px-4">
+            <div className="flex items-start gap-2">
               <textarea
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={handleInput}
                 placeholder="Ask anything about your documents..."
                 className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
                 rows={1}
                 style={{ height: 'auto', minHeight: '44px' }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = `${target.scrollHeight}px`;
-                }}
               />
               <Button 
                 type="submit" 
                 disabled={isSearching}
-                className="px-6 self-start mt-1"
+                className="px-6"
               >
                 {isSearching ? (
                   <>
@@ -102,26 +103,21 @@ export function SearchSection() {
       </div>
 
       {/* Search Form at Bottom */}
-      <div className="sticky bottom-0 bg-gray-50 py-4 border-t">
+      <div className="sticky bottom-0 bg-gray-50 py-4">
         <form onSubmit={handleSearch} className="max-w-3xl mx-auto w-full px-4">
           <div className="flex items-start gap-2">
             <textarea
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={handleInput}
               placeholder="Ask anything about your documents..."
               className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
               rows={1}
               style={{ height: 'auto', minHeight: '44px' }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = `${target.scrollHeight}px`;
-              }}
             />
             <Button 
               type="submit" 
               disabled={isSearching}
-              className="px-6 mt-1"
+              className="px-6"
             >
               {isSearching ? (
                 <>
