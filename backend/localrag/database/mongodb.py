@@ -11,6 +11,13 @@ class MongoDB:
     async def connect_to_mongo(self):
         self.client = AsyncIOMotorClient(settings.mongodb_url)
         self.db = self.client[settings.mongodb_db_name]
+        
+        # Create text indexes for search
+        collection = await get_chat_collection()
+        await collection.create_index([
+            ("title", "text"),
+            ("messages.content", "text")
+        ])
 
     async def close_mongo_connection(self):
         if self.client:
@@ -30,9 +37,9 @@ async def get_chat(chat_id: str):
     collection = await get_chat_collection()
     return await collection.find_one({"_id": ObjectId(chat_id)})
 
-async def get_user_chats(user_id: str):
+async def get_chats():
     collection = await get_chat_collection()
-    cursor = collection.find({"user_id": user_id}).sort("last_updated", -1)
+    cursor = collection.find().sort("last_updated", -1)
     return await cursor.to_list(length=None)
 
 async def update_chat(chat_id: str, update_data: dict):
@@ -40,4 +47,78 @@ async def update_chat(chat_id: str, update_data: dict):
     await collection.update_one(
         {"_id": ObjectId(chat_id)},
         {"$set": update_data}
-    ) 
+    )
+
+async def delete_chat(chat_id: str):
+    collection = await get_chat_collection()
+    await collection.delete_one({"_id": ObjectId(chat_id)})
+
+async def search_chats(query: str, limit: int = 10):
+    collection = await get_chat_collection()
+    
+    # Search in both titles and message content
+    pipeline = [
+        {
+            "$match": {
+                "$or": [
+                    {"title": {"$regex": query, "$options": "i"}},
+                    {"messages.content": {"$regex": query, "$options": "i"}}
+                ]
+            }
+        },
+        {
+            "$addFields": {
+                "relevantMessages": {
+                    "$filter": {
+                        "input": "$messages",
+                        "as": "message",
+                        "cond": {
+                            "$regexMatch": {
+                                "input": "$$message.content",
+                                "regex": query,
+                                "options": "i"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 1,
+                "title": 1,
+                "last_updated": 1,
+                "matchedMessages": {
+                    "$slice": ["$relevantMessages", 2]  # Get up to 2 matching messages as preview
+                },
+                "messageCount": {"$size": "$messages"},
+                "matchCount": {"$size": "$relevantMessages"}
+            }
+        },
+        {"$sort": {"last_updated": -1}},
+        {"$limit": limit}
+    ]
+    
+    cursor = collection.aggregate(pipeline)
+    results = await cursor.to_list(length=None)
+    
+    # Format results
+    formatted_results = []
+    for result in results:
+        formatted_result = {
+            "id": str(result["_id"]),
+            "title": result["title"],
+            "last_updated": result["last_updated"],
+            "total_messages": result["messageCount"],
+            "match_count": result["matchCount"],
+            "preview_messages": [
+                {
+                    "content": msg["content"],
+                    "created_at": msg["created_at"]
+                }
+                for msg in result.get("matchedMessages", [])
+            ]
+        }
+        formatted_results.append(formatted_result)
+    
+    return formatted_results 

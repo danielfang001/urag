@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # MongoDB settings
     mongodb_url: str = "mongodb://localhost:27017"
-    mongodb_db_name: str = "uragchat"
+    mongodb_db_name: str = "urag"
 
     model_config = ConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 

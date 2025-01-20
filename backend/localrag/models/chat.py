@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel, Field
 from bson import ObjectId
 
@@ -17,7 +17,6 @@ class Chat(BaseModel):
     id: str = Field(default_factory=lambda: str(ObjectId()))
     title: str
     messages: List[Message] = Field(default_factory=list)
-    user_id: str
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
