@@ -3,7 +3,9 @@ from .config import get_settings
 from .core import bind_milvus
 from .api.routes import documents, search
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
+logger = logging.getLogger(__name__)
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
@@ -24,17 +26,18 @@ def create_app() -> FastAPI:
     async def startup_event():
         # Bind Milvus using settings
         uri = f"http://{settings.milvus_host}:{settings.milvus_port}"
+        logger.info(f"Binding Milvus to {uri}")
         bind_milvus(app, uri, settings.milvus_collection)
 
-     # Register API routes
+    # Register API routes
     app.include_router(
         documents.router,
         prefix="/api/documents",
         tags=["documents"]
     )
     app.include_router(
-        search.router,
-        prefix="/api/search",
+        documents.router,  # Change this to use the search route from documents
+        prefix="/api",     # Mount at /api to handle /api/search
         tags=["search"]
     )
 

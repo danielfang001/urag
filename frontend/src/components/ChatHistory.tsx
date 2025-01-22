@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { MessageCircle, X, Plus, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MessageCircle, X, Plus, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatSearch } from './ChatSearch';
+import { api } from '@/api';
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatHistoryProps {
   onSelectChat: (chatId: string) => void;
@@ -11,25 +13,52 @@ interface ChatHistoryProps {
   trigger?: React.ReactNode;
 }
 
-interface ChatSession {
-  id: string;
-  title: string;
-  lastUpdated: string;
-}
-
-// Mock data - will be replaced with API calls
-const mockChats: ChatSession[] = [
-  {
-    id: '1',
-    title: 'Benefits of Exercise',
-    lastUpdated: '2024-03-14T12:00:00Z'
-  },
-  // Add more mock chats
-];
-
 export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chats' | 'search'>('chats');
+  const [chats, setChats] = useState<Array<{ id: string; title: string; last_updated: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const loadChats = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.getChats();
+      setChats(data);
+    } catch (error) {
+      console.error('Failed to load chats:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load chat history",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'chats') {
+      loadChats();
+    }
+  }, [isOpen, activeTab]);
+
+  const handleNewChat = async () => {
+    try {
+      const title = `New Chat ${new Date().toLocaleString()}`;
+      const { id } = await api.createChat(title);
+      onNewChat();
+      onSelectChat(id);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Failed to create chat:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new chat",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <>
@@ -97,17 +126,21 @@ export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryPro
             <div className="flex-1 overflow-y-auto p-4">
               {activeTab === 'chats' ? (
                 <div className="space-y-3">
-                  <Button onClick={onNewChat} className="w-full mb-4">
+                  <Button onClick={handleNewChat} className="w-full mb-4">
                     <Plus className="w-4 h-4 mr-2" />
                     New Chat
                   </Button>
                   
-                  {mockChats.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : chats.length === 0 ? (
                     <p className="text-sm text-gray-500 text-center p-4">
                       No chat history yet. Start a new chat!
                     </p>
                   ) : (
-                    mockChats.map((chat) => (
+                    chats.map((chat) => (
                       <button
                         key={chat.id}
                         onClick={() => {
@@ -121,7 +154,7 @@ export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryPro
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{chat.title}</p>
                             <p className="text-xs text-gray-500">
-                              {new Date(chat.lastUpdated).toLocaleDateString()}
+                              {new Date(chat.last_updated).toLocaleDateString()}
                             </p>
                           </div>
                         </div>

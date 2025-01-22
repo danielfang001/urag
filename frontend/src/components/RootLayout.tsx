@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import { ChatHistory } from "./ChatHistory";
 import { MessageCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,14 @@ export function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
   const handleSelectChat = (chatId: string) => {
-    console.log('Selected chat:', chatId);
-    // TODO: Implement chat selection logic
+    router.push(`/chat/${chatId}`);
   };
 
   const handleNewChat = () => {
-    console.log('New chat');
-    // TODO: Implement new chat creation
+    router.push('/chat/new');
   };
 
   return (

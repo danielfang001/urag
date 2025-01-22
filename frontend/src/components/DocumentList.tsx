@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { DocumentPreview } from "./DocumentPreview";
-import { api, Document } from '@/lib/api';
+import { api, Document } from '@/api';
 import { useToast } from "@/hooks/use-toast";
 
 export function DocumentList() {
@@ -22,13 +22,13 @@ export function DocumentList() {
     try {
       const docs = await api.getDocuments();
       setDocuments(docs);
+      setIsLoading(false);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to load documents",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -47,10 +47,10 @@ export function DocumentList() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (document: Document) => {
     try {
-      await api.deleteDocument(id);
-      setDocuments(docs => docs.filter(d => d.id !== id));
+      await api.deleteDocument(document.id);
+      setDocuments(docs => docs.filter(d => d.id !== document.id));
       toast({
         title: "Success",
         description: "Document deleted successfully",
@@ -66,6 +66,14 @@ export function DocumentList() {
 
   if (isLoading) {
     return <div className="text-center py-8">Loading...</div>;
+  }
+
+  if (documents.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        No documents found. Upload a document to get started.
+      </div>
+    );
   }
 
   return (
@@ -97,7 +105,7 @@ export function DocumentList() {
                   variant="ghost" 
                   size="icon" 
                   className="text-red-500 hover:text-red-600"
-                  onClick={() => handleDelete(doc.id)}
+                  onClick={() => handleDelete(doc)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

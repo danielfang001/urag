@@ -1823,13 +1823,13 @@ yaml = ["pyyaml (>=6.0.1)"]
 
 [[package]]
 name = "pymilvus"
-version = "2.5.3"
+version = "2.5.4"
 description = "Python Sdk for Milvus"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pymilvus-2.5.3-py3-none-any.whl", hash = "sha256:64ca63594284586937274800be27a402f3be2d078130bf81d94ab8d7798ac9c8"},
-    {file = "pymilvus-2.5.3.tar.gz", hash = "sha256:68bc3797b7a14c494caf116cee888894ffd6eba7b96a3ac841be85d60694cc5d"},
+    {file = "pymilvus-2.5.4-py3-none-any.whl", hash = "sha256:3f7ddaeae0c8f63554b8e316b73f265d022e05a457d47c366ce47293434a3aea"},
+    {file = "pymilvus-2.5.4.tar.gz", hash = "sha256:611732428ff669d57ded3d1f823bdeb10febf233d0251cce8498b287e5a10ce8"},
 ]
 
 [package.dependencies]
@@ -2731,4 +2731,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ef4d2621600628006186be44c938d2be1060cfbafd274affa9fa31560b93a2af"
+content-hash = "ec626a59838666c493db1ea99b2e5e9e19c890f4021034f9ed8bbd99e1693437"

@@ -1,22 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Loader2, MessageCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
-
-interface SearchResult {
-  id: string;
-  title: string;
-  last_updated: string;
-  total_messages: number;
-  match_count: number;
-  preview_messages: Array<{
-    content: string;
-    created_at: string;
-    matched_text: string | null;
-  }>;
-}
+import { api } from '@/api';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface ChatSearchProps {
   onSelectChat: (chatId: string) => void;
@@ -25,21 +14,30 @@ interface ChatSearchProps {
 export function ChatSearch({ onSelectChat }: ChatSearchProps) {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<Awaited<ReturnType<typeof api.searchChats>>>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const { toast } = useToast();
+  const debouncedQuery = useDebounce(query, 300); // Debounce search for better performance
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-search when query changes
+  useEffect(() => {
+    if (debouncedQuery.trim()) {
+      handleSearch();
+    } else {
+      setResults([]);
+      setHasSearched(false);
+    }
+  }, [debouncedQuery]);
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!query.trim()) return;
 
     setIsSearching(true);
     setHasSearched(true);
     try {
-      const response = await fetch(`/api/chat/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error('Search failed');
-      const data = await response.json();
-      setResults(data);
+      const searchResults = await api.searchChats(query.trim());
+      setResults(searchResults);
     } catch (error) {
       console.error('Search failed:', error);
       toast({
@@ -68,7 +66,7 @@ export function ChatSearch({ onSelectChat }: ChatSearchProps) {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={handleSearch}>
+      <form onSubmit={handleSearch} className="sticky top-0 bg-white pt-1 pb-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <input
@@ -79,21 +77,10 @@ export function ChatSearch({ onSelectChat }: ChatSearchProps) {
             className="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isSearching}
           />
-        </div>
-        <Button 
-          type="submit" 
-          disabled={isSearching || !query.trim()}
-          className="w-full mt-2"
-        >
-          {isSearching ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Searching...
-            </>
-          ) : (
-            'Search'
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
           )}
-        </Button>
+        </div>
       </form>
 
       {/* Results Section */}

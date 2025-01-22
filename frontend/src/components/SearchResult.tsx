@@ -10,12 +10,10 @@ interface SearchResultProps {
     answer: string;
     sources: Array<{
       content: string;
-      metadata: {
-        filename: string;
-        page?: number;
-      };
+      filename: string;
+      score: number;
     }>;
-  } | null;
+  };
 }
 
 export function SearchResult({ query, response }: SearchResultProps) {
@@ -63,8 +61,7 @@ export function SearchResult({ query, response }: SearchResultProps) {
                     {response.sources.map((source, index) => (
                       <div key={index} className="bg-white p-3 rounded border text-sm">
                         <p className="font-medium text-gray-900 mb-1">
-                          {source.metadata.filename}
-                          {source.metadata.page && ` (Page ${source.metadata.page})`}
+                          {source.filename}
                         </p>
                         <p className="text-gray-600">{source.content}</p>
                       </div>

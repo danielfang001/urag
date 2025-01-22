@@ -35,3 +35,9 @@ ENV/
 
 # Project specific
 .milvus/
+
+volumes/
+volumes/etcd/
+volumes/mongodb/
+volumes/minio/
+volumes/milvus
