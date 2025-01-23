@@ -35,10 +35,17 @@ export function DocumentList() {
 
   const handlePreview = async (doc: Document) => {
     try {
-      const content = await api.getDocumentContent(doc.id);
-      setSelectedDoc({ ...doc, content });
+      console.log('Attempting to preview document:', doc.name); // Debug log
+      const response = await fetch(`/api/documents/${encodeURIComponent(doc.name)}/content`);
+      if (!response.ok) {
+        console.error('Response not OK:', response.status, response.statusText);
+        throw new Error('Failed to load document');
+      }
+      const blob = await response.blob();
+      setSelectedDoc({ ...doc, content: URL.createObjectURL(blob) });
       setIsPreviewOpen(true);
     } catch (error) {
+      console.error('Preview error:', error);
       toast({
         title: "Error",
         description: "Failed to load document content",
@@ -47,15 +54,16 @@ export function DocumentList() {
     }
   };
 
-  const handleDelete = async (document: Document) => {
+  const handleDelete = async (doc: Document) => {
     try {
-      await api.deleteDocument(document.id);
-      setDocuments(docs => docs.filter(d => d.id !== document.id));
+      await api.deleteDocument(doc.name);
+      setDocuments(documents.filter(d => d.id !== doc.id));
       toast({
         title: "Success",
         description: "Document deleted successfully",
       });
     } catch (error) {
+      console.error('Delete error:', error);
       toast({
         title: "Error",
         description: "Failed to delete document",

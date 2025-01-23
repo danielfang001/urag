@@ -1,78 +1,134 @@
 'use client';
 
-import { useState } from 'react';
 import { User, Bot } from 'lucide-react';
-import { TypingAnimation } from './TypingAnimation';
+import { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SearchResponse } from '@/api';
 
 interface SearchResultProps {
   query: string;
-  response: {
-    answer: string;
-    sources: Array<{
-      content: string;
-      filename: string;
-      score: number;
-    }>;
-  };
+  response: SearchResponse;
+  isHistory?: boolean;
 }
 
-export function SearchResult({ query, response }: SearchResultProps) {
-  const [showSources, setShowSources] = useState(false);
+export function SearchResult({ query, response, isHistory = false }: SearchResultProps) {
+  const [displayedAnswer, setDisplayedAnswer] = useState(isHistory ? response.answer || '' : '');
+  const [isTyping, setIsTyping] = useState(!isHistory);
+  const [selectedSource, setSelectedSource] = useState<{
+    content: string;
+    filename: string;
+  } | null>(null);
 
-  if (!query) return null;
+  const topSources = [...response.sources]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
+
+  const truncateText = (text: string) => {
+    if (text.length <= 150) return text;
+    return text.slice(0, 150) + '...';
+  };
+
+  useEffect(() => {
+    // If it's a history message or no answer, display immediately
+    if (isHistory || !response.answer) {
+      setDisplayedAnswer(response.answer || '');
+      setIsTyping(false);
+      return;
+    }
+
+    // Reset for new messages
+    setDisplayedAnswer('');
+    setIsTyping(true);
+
+    const answer = response.answer;
+    let currentIndex = 0;
+    let mounted = true;
+
+    const timer = setInterval(() => {
+      if (!mounted) return;
+
+      if (currentIndex < answer.length) {
+        setDisplayedAnswer(answer.substring(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        setIsTyping(false);
+        clearInterval(timer);
+      }
+    }, 20);
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+      // Ensure full answer is displayed when unmounting
+      setDisplayedAnswer(answer);
+      setIsTyping(false);
+    };
+  }, [response.answer, isHistory]);
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto px-4">
-      {/* User Query */}
-      <div className="bg-white p-6 rounded-lg">
-        <div className="flex gap-4">
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-            <User className="w-5 h-5 text-gray-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-gray-900">{query}</p>
-          </div>
+    <div className="space-y-6">
+      {/* Question */}
+      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg items-start">
+        <User className="h-6 w-6 text-gray-600 flex-shrink-0" />
+        <p className="text-gray-800">{query}</p>
+      </div>
+
+      {/* Answer */}
+      <div className="flex gap-4 p-4">
+        <Bot className="h-6 w-6 text-blue-600 flex-shrink-0" />
+        <div className="space-y-4 flex-1">
+          <p className="text-gray-800 whitespace-pre-wrap min-h-[1.5rem]">
+            {displayedAnswer}
+            {isTyping && <span className="animate-pulse">▊</span>}
+          </p>
+
+          {/* Sources Section - Top 2 only */}
+          {!isTyping && topSources.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-600 mb-2">
+                Sources (showing top 2):
+              </h3>
+              <div className="space-y-2">
+                {topSources.map((source, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                    <div className="flex justify-between items-start mb-1">
+                      <button 
+                        onClick={() => setSelectedSource(source)}
+                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {source.filename}
+                      </button>
+                      <span className="text-xs text-gray-500">
+                        Score: {source.score.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap">{source.content.slice(0, 150)}...</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* AI Response */}
-      {response && (
-        <div className="bg-gray-50 p-6 rounded-lg">
-          <div className="flex gap-4">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="flex-1 space-y-4">
-              {/* Main Answer with Typing Animation */}
-              <div className="prose max-w-none">
-                <p className="text-gray-900">
-                  <TypingAnimation 
-                    text={response.answer}
-                    onComplete={() => setShowSources(true)}
-                  />
-                </p>
-              </div>
-
-              {/* Sources - Show immediately after typing is complete */}
-              {showSources && response.sources.length > 0 && (
-                <div className="mt-4 animate-fade-in">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Sources:</p>
-                  <div className="space-y-2">
-                    {response.sources.map((source, index) => (
-                      <div key={index} className="bg-white p-3 rounded border text-sm">
-                        <p className="font-medium text-gray-900 mb-1">
-                          {source.filename}
-                        </p>
-                        <p className="text-gray-600">{source.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+      {/* Source Preview Dialog */}
+      <Dialog open={!!selectedSource} onOpenChange={() => setSelectedSource(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{selectedSource?.filename}</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 overflow-y-auto max-h-[60vh]">
+            <pre className="whitespace-pre-wrap font-mono text-sm p-4 bg-gray-50 rounded-lg">
+              {selectedSource?.content}
+            </pre>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

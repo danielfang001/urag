@@ -2,6 +2,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from ..config import get_settings
 from bson import ObjectId
 
+# in this file we define mongodb interface and also initialize the connection with setting configurations
+
 settings = get_settings()
 
 class MongoDB:

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 import shutil
 import os
@@ -12,6 +12,7 @@ from urllib.parse import unquote
 from localrag.core.document_processor import DocumentProcessor
 from localrag.core.vector_store import get_milvus
 from localrag.config import get_settings
+from ...database.mongodb import create_chat
 
 # Load environment variables
 load_dotenv()
@@ -85,7 +86,7 @@ async def upload_document(
             f.write(content)
         logger.info("File saved successfully")
         
-        try:
+        try:                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
             logger.info("Loading document...")
             chunks = processor.load_document(file_path)
             logger.info(f"Generated {len(chunks)} chunks")
@@ -191,45 +192,23 @@ async def delete_document(
         logger.error(f"Delete error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/search")
-async def search_documents(
-    request: Request,
-    query: dict
-):
+@router.get("/api/documents/{filename}/content")
+async def get_document_content(filename: str):
     try:
-        logger.info(f"Received search query: {query}")
+        # Debug logging
+        logger.info(f"Requested filename: {filename}")
+        logger.info(f"Upload directory: {get_settings().upload_dir}")
         
-        engine = request.app.state.vector_db
-        processor = DocumentProcessor(get_settings().openai_api_key)
+        decoded_filename = filename.replace('%20', ' ')
+        file_path = os.path.join(get_settings().upload_dir, decoded_filename)
+        logger.info(f"Full file path: {file_path}")
+        logger.info(f"File exists: {os.path.exists(file_path)}")
         
-        query_embedding = await processor.get_embedding(query["query"])
-        
-        search_results = engine.similarity_search(
-            query_embedding,
-            limit=5
-        )
-    
-        context = "\n\n".join([result["content"] for result in search_results])
-        logger.info(f"Context: {context}")
-        
-        messages = [
-            {"role": "system", "content": "You are a helpful assistant. Use the provided context to answer the question. If you cannot find the answer in the context, say so."},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer:"}
-        ]
-        
-        completion = processor.client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=0.7,
-        )
-        
-        answer = completion.choices[0].message.content
-        
-        return {
-            "answer": answer,
-            "sources": search_results
-        }
-        
+        if not os.path.exists(file_path):
+            logger.error(f"File not found: {file_path}")
+            raise HTTPException(status_code=404, detail=f"Document not found: {decoded_filename}")
+            
+        return FileResponse(file_path)
     except Exception as e:
-        logger.error(f"Search error: {str(e)}", exc_info=True)
+        logger.error(f"Content fetch error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -34,6 +34,7 @@ export interface SearchResponse {
     filename: string;
     score: number;
   }>;
+  chat_id?: string;
 }
 
 export const api = {
@@ -135,10 +136,10 @@ export const api = {
     }
   },
 
-  async getDocumentContent(id: string): Promise<string> {
-    const response = await fetch(`/api/documents/${id}/content`);
+  async getDocumentContent(filename: string): Promise<Blob> {
+    const response = await fetch(`/api/documents/${filename}/download`);
     if (!response.ok) throw new Error('Failed to fetch document content');
-    return response.json();
+    return response.blob();
   },
 
   async deleteDocument(filename: string): Promise<void> {
@@ -152,11 +153,11 @@ export const api = {
   },
 
   // Search operations
-  async searchDocuments(query: string): Promise<SearchResponse> {
+  async searchDocuments(query: string, chatId?: string): Promise<SearchResponse> {
     const response = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query, chat_id: chatId }),
     });
     
     if (!response.ok) {

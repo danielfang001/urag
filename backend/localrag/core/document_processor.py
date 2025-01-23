@@ -6,6 +6,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from openai import OpenAI
 import logging
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ class DocumentProcessor:
         
 
     def read_pdf(self, file_path: Path) -> List[Dict]:
+        logger.info(f"Reading PDF file with new method: {file_path}")
         try:
             logger.info(f"Reading PDF file: {file_path}")
             with open(file_path, 'rb') as file:
@@ -34,9 +36,11 @@ class DocumentProcessor:
                 pages = []
                 for i, page in enumerate(pdf.pages):
                     text = page.extract_text()
-                    if text.strip():  # Only add non-empty pages
+                    # Clean up the text
+                    cleaned_text = self._clean_pdf_text(text)
+                    if cleaned_text.strip():  # Only add non-empty pages
                         pages.append({
-                            'content': text,
+                            'content': cleaned_text,
                             'page': i + 1
                         })
                 logger.info(f"Successfully read {len(pages)} pages from PDF")
@@ -44,6 +48,25 @@ class DocumentProcessor:
         except Exception as e:
             logger.error(f"Error reading PDF: {str(e)}")
             raise
+
+    def _clean_pdf_text(self, text: str) -> str:
+        """Clean up PDF extracted text by handling common issues."""
+        # Replace multiple newlines with a single newline
+        text = re.sub(r'\n\s*\n', '\n', text)
+        
+        # Remove single-word line breaks (common PDF extraction artifact)
+        text = re.sub(r'(?<!\n)\n(?!\n)(?!\s*[-•\d])(?!\s*[A-Z][a-z])', ' ', text)
+        
+        # Join hyphenated words split across lines
+        text = re.sub(r'(\w)-\n(\w)', r'\1\2', text)
+        
+        # Remove excessive whitespace
+        text = ' '.join(text.split())
+        
+        # Add proper paragraph breaks
+        text = text.replace('. ', '.\n')
+        
+        return text
 
     def read_docx(self, file_path: Path) -> List[Dict]:
         doc = Document(file_path)

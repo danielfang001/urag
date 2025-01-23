@@ -6,13 +6,14 @@ import { Loader2, User, Bot } from "lucide-react";
 import { api } from '@/api';
 import { useToast } from "@/hooks/use-toast";
 import { SearchResult } from '@/components/SearchResult';
-import { SearchResponse } from '@/types/search';
+import { SearchResponse } from '@/api';
+import { useRouter } from 'next/navigation';
 
 export function SearchSection() {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [response, setResponse] = useState<SearchResponse | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +21,21 @@ export function SearchSection() {
 
     setIsSearching(true);
     try {
-      const searchResponse = await api.searchDocuments(query);
-      setResponse(searchResponse);
+      // Search the documents
+      const searchResponse: SearchResponse = await api.searchDocuments(query);
+      
+      console.log('Search response:', searchResponse); 
+      
+      // Directly navigate to chat with ID instead of storing in localStorage
+      if (searchResponse.chat_id) {
+        router.push(`/chat/${searchResponse.chat_id}`);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create chat",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Search error:', error);
       toast({
@@ -41,40 +55,42 @@ export function SearchSection() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
-      <form onSubmit={handleSearch} className="sticky top-4 z-10 bg-gray-50 p-4 rounded-lg shadow-sm">
-        <div className="flex items-start gap-2 max-w-3xl mx-auto">
-          <textarea
-            value={query}
-            onChange={handleInput}
-            placeholder="Ask anything about your documents..."
-            className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
-            rows={1}
-            style={{ height: 'auto', minHeight: '44px' }}
-          />
-          <Button 
-            type="submit" 
-            disabled={isSearching}
-            className="px-6"
-          >
-            {isSearching ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Searching...
-              </>
-            ) : (
-              'Search'
-            )}
-          </Button>
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
+      <div className="w-full max-w-3xl px-4 space-y-8">
+        {/* Logo and Title */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold tracking-tight">URAG</h1>
+          <p className="text-lg text-gray-600">Your Universal RAG Assistant</p>
         </div>
-      </form>
 
-      {response && (
-        <SearchResult 
-          query={query}
-          response={response}
-        />
-      )}
+        {/* Search Form */}
+        <form onSubmit={handleSearch} className="w-full">
+          <div className="flex items-start gap-2">
+            <textarea
+              value={query}
+              onChange={handleInput}
+              placeholder="Ask anything about your documents..."
+              className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+              rows={1}
+              style={{ height: 'auto', minHeight: '44px' }}
+            />
+            <Button 
+              type="submit" 
+              disabled={isSearching}
+              className="px-6"
+            >
+              {isSearching ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                'Search'
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
