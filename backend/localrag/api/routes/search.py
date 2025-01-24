@@ -4,13 +4,15 @@ from ...config import get_settings
 import logging
 from datetime import datetime
 import json
-from ...database.mongodb import create_chat
+from ...database.mongodb import create_chat, get_chat, update_chat
 
 
 
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
+
+
 
 @router.post("/search")
 async def search_documents(
@@ -23,21 +25,51 @@ async def search_documents(
         engine = request.app.state.vector_db
         processor = DocumentProcessor(get_settings().openai_api_key)
         
+        # Get chat history for follow-up questions
+        chat_history = ""
+        chat_id = None
+        if not query.get('initial', False) and 'chatId' in query and query['chatId']:
+            try:
+                chat = await get_chat(query['chatId'])
+                chat_id = query['chatId']
+                for msg in chat["messages"]:
+                    role = "User" if msg["role"] == "user" else "Assistant"
+                    chat_history += f"{role}: {msg['content']}\n"
+                chat_history = f"\nPrevious conversation:\n{chat_history}\n"
+            except Exception as e:
+                logger.error(f"Error getting chat history: {e}")
+                pass
+        
         query_embedding = await processor.get_embedding(query["query"])
         search_results = engine.similarity_search(query_embedding, limit=5)
         context = "\n\n".join([result["content"] for result in search_results])
         
-        messages = [
-            {"role": "system", "content": """You are a helpful assistant. Analyze if the provided context is needed to answer the question.
-            If the question can be answered without the context (like greetings or general queries), ignore the context completely.
-            
-            Your response should be in JSON format:
-            {
-                "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
-                "used_context": boolean (true/false) indicating if you used the context to answer
-            }"""},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
-        ]
+        # Different message templates for initial vs follow-up questions
+        if query.get('initial', False):
+            messages = [
+                {"role": "system", "content": """You are a helpful assistant. Analyze if the provided context is needed to answer the question.
+                If the question can be answered without the context (like greetings or general queries), ignore the context completely.
+                
+                Your response should be in JSON format:
+                {
+                    "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
+                    "used_context": boolean (true/false) indicating if you used the context
+                }"""},
+                {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
+            ]
+        else:
+            messages = [
+                {"role": "system", "content": """You are a helpful assistant. You have access to both previous conversation history and additional context.
+                Use the conversation history to maintain continuity in the discussion and you can assume this is your knowledge.
+                For the additional context, analyze if it is needed to answer the question and indicate this in your response.
+                
+                Your response should be in JSON format:
+                {
+                    "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
+                    "used_context": boolean (true/false) indicating if you used the additional context (not the conversation history, if you used the conversation history, it should be false)
+                }"""},
+                {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
+            ]
         
         completion = processor.client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -48,12 +80,32 @@ async def search_documents(
         
         response_content = json.loads(completion.choices[0].message.content)
         
-        # Add logging to debug the response
         logger.info(f"Response content: {response_content}")
         
-        chat = {
-            "title": query["query"][:50] + "...",
-            "messages": [
+        # For initial queries, create new chat
+        if query.get('initial', False):
+            chat = {
+                "title": query["query"][:50] + "...",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": query["query"],
+                        "created_at": datetime.utcnow()
+                    },
+                    {
+                        "role": "assistant",
+                        "content": response_content["answer"],
+                        "sources": search_results if response_content.get("used_context", False) else [],
+                        "created_at": datetime.utcnow()
+                    }
+                ],
+                "last_updated": datetime.utcnow()
+            }
+            chat_id = await create_chat(chat)
+        # For follow-up questions, update existing chat
+        elif 'chatId' in query and query['chatId']:
+            chat_id = query['chatId']
+            new_messages = [
                 {
                     "role": "user",
                     "content": query["query"],
@@ -65,15 +117,13 @@ async def search_documents(
                     "sources": search_results if response_content.get("used_context", False) else [],
                     "created_at": datetime.utcnow()
                 }
-            ],
-            "last_updated": datetime.utcnow()
-        }
+            ]
+            await update_chat(chat_id, new_messages)
+        else:
+            raise HTTPException(status_code=400, detail="Missing chatId for follow-up question")
         
-        chat_id = await create_chat(chat)
-        
-        # Make sure we're sending the answer
         return {
-            "chat_id": str(chat_id),  # Ensure chat_id is a string
+            "chat_id": str(chat_id),
             "answer": response_content["answer"].strip(),
             "sources": search_results if response_content.get("used_context", False) else []
         }

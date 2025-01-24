@@ -28,6 +28,7 @@ export default function ChatPage() {
 
   const loadChat = async () => {
     try {
+      console.log('Loading chat with ID:', chatId);
       const chat = await api.getChat(chatId);
       // Convert chat messages to SearchResult format
       const formattedMessages = chat.messages.reduce<Message[]>((acc, msg, index, arr) => {
@@ -38,11 +39,13 @@ export default function ChatPage() {
               query: msg.content,
               response: {
                 answer: nextMsg.content,
-                sources: (nextMsg.sources || []).map(source => ({
-                  content: source.content,
-                  filename: source.metadata.filename,
-                  score: 1  // Default score since it's from history
-                }))
+                sources: (nextMsg.sources || []).map(source => {
+                  return {
+                    content: source.content,
+                    score: source.score,
+                    filename: source.filename
+                  };
+                })
               }
             });
           }
@@ -63,8 +66,7 @@ export default function ChatPage() {
 
     setIsSending(true);
     try {
-      const response = await api.searchDocuments(input, chatId);
-      
+      const response = await api.searchDocuments(input, chatId, false);  // false for follow-up
       setMessages(prev => [...prev, {
         query: input,
         response: {

@@ -1,24 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageCircle, X, Plus, Search, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Plus, Search, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ChatSearch } from './ChatSearch';
 import { api } from '@/api';
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 interface ChatHistoryProps {
   onSelectChat: (chatId: string) => void;
-  onNewChat: () => void;
   trigger?: React.ReactNode;
 }
 
-export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryProps) {
+export function ChatHistory({ onSelectChat, trigger }: ChatHistoryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chats' | 'search'>('chats');
   const [chats, setChats] = useState<Array<{ id: string; title: string; last_updated: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const loadChats = async () => {
     setIsLoading(true);
@@ -43,18 +44,41 @@ export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryPro
     }
   }, [isOpen, activeTab]);
 
-  const handleNewChat = async () => {
+  const handleNewChat = () => {
+    router.push('/');
+    setIsOpen(false);
+  };
+
+  const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      const title = `New Chat ${new Date().toLocaleString()}`;
-      const { id } = await api.createChat(title);
-      onNewChat();
-      onSelectChat(id);
-      setIsOpen(false);
+      await api.deleteChat(chatId);
+      await loadChats();
+      toast({
+        title: "Success",
+        description: "Chat deleted successfully",
+      });
     } catch (error) {
-      console.error('Failed to create chat:', error);
       toast({
         title: "Error",
-        description: "Failed to create new chat",
+        description: "Failed to delete chat",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAllChats = async () => {
+    try {
+      await api.deleteAllChats();
+      await loadChats();
+      toast({
+        title: "Success",
+        description: "All chats deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete all chats",
         variant: "destructive",
       });
     }
@@ -131,6 +155,15 @@ export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryPro
                     New Chat
                   </Button>
                   
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDeleteAllChats} 
+                    className="w-full mb-4 text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete All Chats
+                  </Button>
+                  
                   {isLoading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -141,24 +174,34 @@ export function ChatHistory({ onSelectChat, onNewChat, trigger }: ChatHistoryPro
                     </p>
                   ) : (
                     chats.map((chat) => (
-                      <button
+                      <div
                         key={chat.id}
-                        onClick={() => {
-                          onSelectChat(chat.id);
-                          setIsOpen(false);
-                        }}
-                        className="w-full p-3 text-left rounded-lg hover:bg-gray-100 border"
+                        className="w-full p-3 rounded-lg hover:bg-gray-100 border relative group flex items-center justify-between"
                       >
-                        <div className="flex items-center gap-3">
-                          <MessageCircle className="w-4 h-4 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{chat.title}</p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(chat.last_updated).toLocaleDateString()}
-                            </p>
+                        <button
+                          onClick={() => {
+                            onSelectChat(chat.id);
+                            setIsOpen(false);
+                          }}
+                          className="flex-1 text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{chat.title}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(chat.last_updated).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </button>
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteChat(chat.id, e)}
+                          className="p-1 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     ))
                   )}
                 </div>

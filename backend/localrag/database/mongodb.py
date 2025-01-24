@@ -1,6 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from ..config import get_settings
 from bson import ObjectId
+from datetime import datetime
 
 # in this file we define mongodb interface and also initialize the connection with setting configurations
 
@@ -44,11 +45,14 @@ async def get_chats():
     cursor = collection.find().sort("last_updated", -1)
     return await cursor.to_list(length=None)
 
-async def update_chat(chat_id: str, update_data: dict):
+async def update_chat(chat_id: str, new_messages: list):
     collection = await get_chat_collection()
     await collection.update_one(
         {"_id": ObjectId(chat_id)},
-        {"$set": update_data}
+        {
+            "$push": {"messages": {"$each": new_messages}},
+            "$set": {"last_updated": datetime.utcnow()}
+        }
     )
 
 async def delete_chat(chat_id: str):

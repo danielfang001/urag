@@ -6,7 +6,8 @@ from ...database.mongodb import (
     get_chats,
     update_chat,
     delete_chat,
-    search_chats
+    search_chats,
+    get_chat_collection
 )
 import logging
 from bson import ObjectId
@@ -61,16 +62,13 @@ async def get_chat_by_id(chat_id: str):
         if not chat_doc:
             raise HTTPException(status_code=404, detail="Chat not found")
 
-        # Convert ObjectId to string
         chat_doc['id'] = str(chat_doc.pop('_id'))
-        
-        # Convert message content to string if it's a dict
+
         if 'messages' in chat_doc:
             for msg in chat_doc['messages']:
                 if isinstance(msg.get('content'), dict):
                     msg['content'] = json.dumps(msg['content'])
         
-        # Convert to Pydantic model
         chat = Chat(**chat_doc)
         return chat.dict()
         
@@ -93,14 +91,24 @@ async def add_message(chat_id: str, message: Message):
     })
     return {"success": True}
 
+@router.delete("/all")
+async def delete_all_chats():
+    try:
+        logger.info("Deleting all chats")
+        collection = await get_chat_collection()
+        await collection.delete_many({})
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 
+
 @router.delete("/{chat_id}")
-async def delete_chat(chat_id: str):
-    chat = await get_chat(chat_id)
-    if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
-    
-    await delete_chat(chat_id)
-    return {"success": True}
+async def delete_chat_by_id(chat_id: str):
+    try:
+        await delete_chat(chat_id)  # This is the MongoDB function, not the route
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Error deleting chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/search/")
 async def search_chat_history(
@@ -112,4 +120,5 @@ async def search_chat_history(
     Returns matching chats with relevant message previews.
     """
     results = await search_chats(q, limit)
-    return results 
+    return results
+

@@ -12,7 +12,6 @@ from urllib.parse import unquote
 from localrag.core.document_processor import DocumentProcessor
 from localrag.core.vector_store import get_milvus
 from localrag.config import get_settings
-from ...database.mongodb import create_chat
 
 # Load environment variables
 load_dotenv()

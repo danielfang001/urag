@@ -3,10 +3,8 @@ interface ChatMessage {
   content: string;
   sources?: Array<{
     content: string;
-    metadata: {
-      filename: string;
-      page?: number;
-    }
+    score: number;
+    filename: string;
   }>;
   created_at?: string;
 }
@@ -153,11 +151,15 @@ export const api = {
   },
 
   // Search operations
-  async searchDocuments(query: string, chatId?: string): Promise<SearchResponse> {
+  async searchDocuments(query: string, chatId?: string, fromHomePage: boolean = false): Promise<SearchResponse> {
     const response = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, chat_id: chatId }),
+      body: JSON.stringify({ 
+        query, 
+        chatId,
+        initial: fromHomePage  // True if coming from homepage, false if from chat page
+      }),
     });
     
     if (!response.ok) {
@@ -166,5 +168,19 @@ export const api = {
     }
     
     return response.json();
+  },
+
+  async deleteChat(chatId: string): Promise<void> {
+    const response = await fetch(`/api/chat/${chatId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete chat');
+  },
+
+  async deleteAllChats(): Promise<void> {
+    const response = await fetch('/api/chat/all', {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete all chats');
   }
 }; 

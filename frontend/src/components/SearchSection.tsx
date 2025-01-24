@@ -22,7 +22,7 @@ export function SearchSection() {
     setIsSearching(true);
     try {
       // Search the documents
-      const searchResponse: SearchResponse = await api.searchDocuments(query);
+      const searchResponse: SearchResponse = await api.searchDocuments(query, undefined, true);  // true for homepage/initial search
       
       console.log('Search response:', searchResponse); 
       

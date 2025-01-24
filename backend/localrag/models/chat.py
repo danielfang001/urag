@@ -4,12 +4,13 @@ from pydantic import BaseModel, Field
 from bson import ObjectId
 
 class Source(BaseModel):
-    content: str
-    metadata: dict = Field(default_factory=dict)
+    content: str # source content
+    score: float = Field(default=1.0)
+    filename: str
 
 class Message(BaseModel):
     role: str
-    content: str
+    content: str # response content
     sources: List[Source] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

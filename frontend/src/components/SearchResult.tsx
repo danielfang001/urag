@@ -72,47 +72,51 @@ export function SearchResult({ query, response, isHistory = false }: SearchResul
 
   return (
     <div className="space-y-6">
-      {/* Question */}
-      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg items-start">
-        <User className="h-6 w-6 text-gray-600 flex-shrink-0" />
-        <p className="text-gray-800">{query}</p>
+      {/* Question - User message on the right */}
+      <div className="flex justify-end">
+        <div className="flex flex-row-reverse gap-4 p-4 bg-blue-500 text-white rounded-lg items-start max-w-[80%]">
+          <User className="h-6 w-6 text-white flex-shrink-0" />
+          <p className="text-white whitespace-pre-wrap">{query}</p>
+        </div>
       </div>
 
-      {/* Answer */}
-      <div className="flex gap-4 p-4">
-        <Bot className="h-6 w-6 text-blue-600 flex-shrink-0" />
-        <div className="space-y-4 flex-1">
-          <p className="text-gray-800 whitespace-pre-wrap min-h-[1.5rem]">
-            {displayedAnswer}
-            {isTyping && <span className="animate-pulse">▊</span>}
-          </p>
+      {/* Answer - Bot message on the left */}
+      <div className="flex justify-start">
+        <div className="flex gap-4 p-4 bg-gray-100 rounded-lg items-start max-w-[80%]">
+          <Bot className="h-6 w-6 text-blue-600 flex-shrink-0" />
+          <div className="space-y-4 flex-1">
+            <p className="text-gray-800 whitespace-pre-wrap min-h-[1.5rem]">
+              {displayedAnswer}
+              {isTyping && <span className="animate-pulse">▊</span>}
+            </p>
 
-          {/* Sources Section - Top 2 only */}
-          {!isTyping && topSources.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">
-                Sources (showing top 2):
-              </h3>
-              <div className="space-y-2">
-                {topSources.map((source, index) => (
-                  <div key={index} className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                    <div className="flex justify-between items-start mb-1">
-                      <button 
-                        onClick={() => setSelectedSource(source)}
-                        className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        {source.filename}
-                      </button>
-                      <span className="text-xs text-gray-500">
-                        Score: {source.score.toFixed(2)}
-                      </span>
+            {/* Sources Section - Top 2 only */}
+            {!isTyping && topSources.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold text-gray-600 mb-2">
+                  Sources (showing top 2):
+                </h3>
+                <div className="space-y-2">
+                  {topSources.map((source, index) => (
+                    <div key={index} className="p-3 bg-white rounded-lg text-sm text-gray-700">
+                      <div className="flex justify-between items-start mb-1">
+                        <button 
+                          onClick={() => setSelectedSource(source)}
+                          className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {source.filename}
+                        </button>
+                        <span className="text-xs text-gray-500">
+                          Score: {source.score.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap">{truncateText(source.content)}</p>
                     </div>
-                    <p className="whitespace-pre-wrap">{source.content.slice(0, 150)}...</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

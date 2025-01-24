@@ -50,7 +50,6 @@ export function RootLayout({
               <div className="h-6 w-px bg-gray-200" /> {/* Divider */}
               <ChatHistory 
                 onSelectChat={handleSelectChat}
-                onNewChat={handleNewChat}
                 trigger={
                   <Button
                     variant="ghost"
