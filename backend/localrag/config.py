@@ -3,7 +3,6 @@ from pydantic import ConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
-    openai_api_key: str
 
     milvus_host: str = "localhost"
     milvus_port: int = 19530

@@ -41,3 +41,5 @@ volumes/etcd/
 volumes/mongodb/
 volumes/minio/
 volumes/milvus
+
+backend/data/documents

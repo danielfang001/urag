@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Request
+from fastapi import APIRouter, UploadFile, File, HTTPException, Header, Request
 from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 import shutil
@@ -8,9 +8,8 @@ import logging
 from typing import List
 from dotenv import load_dotenv
 from urllib.parse import unquote
-
+from typing import Optional
 from localrag.core.document_processor import DocumentProcessor
-from localrag.core.vector_store import get_milvus
 from localrag.config import get_settings
 
 # Load environment variables
@@ -28,14 +27,6 @@ ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 
 router = APIRouter()
 
-def get_document_processor():
-    settings = get_settings()
-    api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        logger.error("OPENAI_API_KEY not found in environment or settings")
-        raise HTTPException(status_code=500, detail="OpenAI API key not configured")
-    logger.info("OpenAI API key found")
-    return DocumentProcessor(api_key)
 
 @router.get("")
 async def list_documents():
@@ -60,7 +51,7 @@ async def list_documents():
 async def upload_document(
     request: Request,
     file: UploadFile = File(...),
-    processor: DocumentProcessor = Depends(get_document_processor)
+    x_openai_key: Optional[str] = Header(None, alias="X-OpenAI-Key")
 ):
     try:
         logger.info(f"Received upload request for file: {file.filename}")
@@ -75,7 +66,9 @@ async def upload_document(
         
         # Get Milvus engine from app state
         engine = request.app.state.vector_db
-        
+
+        processor = DocumentProcessor(x_openai_key)
+
         # Save file with original name first
         file_path = UPLOAD_DIR / file.filename
         content = await file.read()

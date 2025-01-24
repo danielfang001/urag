@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Header
 from ...core.document_processor import DocumentProcessor
 from ...config import get_settings
 import logging
 from datetime import datetime
 import json
 from ...database.mongodb import create_chat, get_chat, update_chat
+from typing import Optional
 
 
 
@@ -13,17 +14,19 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-
 @router.post("/search")
 async def search_documents(
     request: Request,
-    query: dict
+    query: dict,
+    x_openai_key: Optional[str] = Header(None, alias="X-OpenAI-Key"),
+    x_openai_model: Optional[str] = Header(None, alias="X-OpenAI-Model")
 ):
     try:
-        logger.info(f"Received search query: {query}")
+        logger.info(f"Received search query: {query}, using model: {x_openai_model}")
         
         engine = request.app.state.vector_db
-        processor = DocumentProcessor(get_settings().openai_api_key)
+        processor = DocumentProcessor(x_openai_key)
+        
         
         # Get chat history for follow-up questions
         chat_history = ""
@@ -72,7 +75,7 @@ async def search_documents(
             ]
         
         completion = processor.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=x_openai_model,
             messages=messages,
             temperature=0.7,
             response_format={ "type": "json_object" }

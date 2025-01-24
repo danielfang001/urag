@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { ChatHistory } from "./ChatHistory";
-import { MessageCircle } from 'lucide-react';
+import { Settings } from "./Settings";
+import { MessageCircle, Search, FileText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 export function RootLayout({
@@ -22,32 +23,28 @@ export function RootLayout({
   };
 
   return (
-    <>
-      <nav className="bg-white shadow-sm">
+    <div className="min-h-screen">
+      <nav className="bg-white shadow-sm fixed top-0 left-0 right-0 z-10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <Link 
-              href="/" 
-              className="text-xl font-bold text-gray-900"
-            >
-              URAG
-            </Link>
-            <div className="flex items-center gap-6">
-              <div className="flex gap-6">
-                <Link 
-                  href="/" 
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  Search
-                </Link>
-                <Link 
-                  href="/documents" 
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  Documents
-                </Link>
-              </div>
-              <div className="h-6 w-px bg-gray-200" /> {/* Divider */}
+            <div className="flex items-center gap-8">
+              <Link href="/" className="text-xl font-bold text-gray-900">
+                URAG
+              </Link>
+              <Link href="/" className="text-gray-600 hover:text-gray-900">
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  <span>Search</span>
+                </Button>
+              </Link>
+              <Link href="/documents" className="text-gray-600 hover:text-gray-900">
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Documents</span>
+                </Button>
+              </Link>
+            </div>
+            <div className="flex items-center gap-4">
               <ChatHistory 
                 onSelectChat={handleSelectChat}
                 trigger={
@@ -60,15 +57,15 @@ export function RootLayout({
                   </Button>
                 }
               />
+              <div className="h-6 w-px bg-gray-200" />
+              <Settings />
             </div>
           </div>
         </div>
       </nav>
-      <main className="flex-1 min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          {children}
-        </div>
+      <main className="pt-16">
+        {children}
       </main>
-    </>
+    </div>
   );
 } 

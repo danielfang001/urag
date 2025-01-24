@@ -37,15 +37,15 @@ export interface SearchResponse {
 
 export const api = {
   // Chat operations
-  async createChat(title: string): Promise<{ id: string }> {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    });
-    if (!response.ok) throw new Error('Failed to create chat');
-    return response.json();
-  },
+  // async createChat(title: string): Promise<{ id: string }> {
+  //   const response = await fetch('/api/chat', {
+  //     method: 'POST',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ title }),
+  //   });
+  //   if (!response.ok) throw new Error('Failed to create chat');
+  //   return response.json();
+  // },
 
   async getChats(): Promise<Chat[]> {
     const response = await fetch('/api/chat');
@@ -96,6 +96,11 @@ export const api = {
   },
 
   async uploadDocument(file: File): Promise<Document> {
+    const apiKey = localStorage.getItem('openai_api_key');
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     console.log('Starting upload for file:', file.name);
     const formData = new FormData();
     formData.append('file', file);
@@ -103,6 +108,9 @@ export const api = {
     try {
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
+        headers: {
+          'X-OpenAI-Key': apiKey
+        },
         body: formData,
       });
       
@@ -152,21 +160,31 @@ export const api = {
 
   // Search operations
   async searchDocuments(query: string, chatId?: string, fromHomePage: boolean = false): Promise<SearchResponse> {
+    const apiKey = localStorage.getItem('openai_api_key');
+    const model = localStorage.getItem('openai_model') || 'gpt-3.5-turbo';
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
     const response = await fetch('/api/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        query, 
+      headers: {
+        'Content-Type': 'application/json',
+        'X-OpenAI-Key': apiKey,
+        'X-OpenAI-Model': model
+      },
+      body: JSON.stringify({
+        query,
         chatId,
-        initial: fromHomePage  // True if coming from homepage, false if from chat page
+        initial: fromHomePage
       }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to search documents');
     }
-    
+
     return response.json();
   },
 
