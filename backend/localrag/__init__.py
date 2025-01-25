@@ -22,18 +22,17 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Bind services on startup
     @app.on_event("startup")
     async def startup_event():
         # Bind Milvus using settings
         uri = f"http://{settings.milvus_host}:{settings.milvus_port}"
         logger.info(f"Binding Milvus to {uri}")
         bind_milvus(app, uri, settings.milvus_collection)
-        await db.connect_to_mongo()  # Connect to MongoDB on startup
+        await db.connect_to_mongo()  
 
     @app.on_event("shutdown")
     async def shutdown_event():
-        await db.close_mongo_connection()  # Close MongoDB connection on shutdown
+        await db.close_mongo_connection()  
 
     # Register API routes
     app.include_router(
@@ -42,8 +41,8 @@ def create_app() -> FastAPI:
         tags=["documents"]
     )
     app.include_router(
-        search.router,  # Change this to use the search route from documents
-        prefix="/api",     # Mount at /api to handle /api/search
+        search.router,  
+        prefix="/api",     
         tags=["search"]
     )
 

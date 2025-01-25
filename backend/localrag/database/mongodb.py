@@ -3,8 +3,6 @@ from ..config import get_settings
 from bson import ObjectId
 from datetime import datetime
 
-# in this file we define mongodb interface and also initialize the connection with setting configurations
-
 settings = get_settings()
 
 class MongoDB:
@@ -15,7 +13,6 @@ class MongoDB:
         self.client = AsyncIOMotorClient(settings.mongodb_url)
         self.db = self.client[settings.mongodb_db_name]
         
-        # Create text indexes for search
         collection = await get_chat_collection()
         await collection.create_index([
             ("title", "text"),
@@ -62,7 +59,6 @@ async def delete_chat(chat_id: str):
 async def search_chats(query: str, limit: int = 10):
     collection = await get_chat_collection()
     
-    # Search in both titles and message content
     pipeline = [
         {
             "$match": {
@@ -95,7 +91,7 @@ async def search_chats(query: str, limit: int = 10):
                 "title": 1,
                 "last_updated": 1,
                 "matchedMessages": {
-                    "$slice": ["$relevantMessages", 2]  # Get up to 2 matching messages as preview
+                    "$slice": ["$relevantMessages", 2]  
                 },
                 "messageCount": {"$size": "$messages"},
                 "matchCount": {"$size": "$relevantMessages"}
