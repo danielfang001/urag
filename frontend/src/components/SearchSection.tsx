@@ -52,42 +52,60 @@ export function SearchSection() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center">
-      <div className="w-full max-w-3xl px-4 space-y-8">
-        {/* Logo and Title */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">URAG</h1>
-          <p className="text-lg text-gray-600">Your Universal RAG Assistant</p>
-        </div>
-
-        {/* Search Form */}
-        <form onSubmit={handleSearch} className="w-full">
-          <div className="flex items-start gap-2">
-            <textarea
-              value={query}
-              onChange={handleInput}
-              placeholder="Ask anything about your documents..."
-              className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
-              rows={1}
-              style={{ height: 'auto', minHeight: '44px' }}
-            />
-            <Button 
-              type="submit" 
-              disabled={isSearching}
-              className="px-6"
-            >
-              {isSearching ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                'Search'
-              )}
-            </Button>
+    <main className="flex-1 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4 pt-64 mt-40 translate-y-8">
+        <div className="w-full max-w-3xl space-y-8">
+          {/* Logo and Title */}
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold tracking-tight">URAG</h1>
+            <p className="text-lg text-gray-600">Your Universal RAG Assistant</p>
           </div>
-        </form>
+
+          {/* Search Form */}
+          <form onSubmit={handleSearch} className="w-full">
+            <div className="flex items-stretch gap-2">
+              <textarea
+                value={query}
+                onChange={handleInput}
+                placeholder="Ask anything about your documents..."
+                className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+                rows={1}
+                style={{ height: 'auto', minHeight: '44px' }}
+              />
+              <Button 
+                type="submit" 
+                disabled={isSearching}
+                className="px-6 h-auto min-h-[44px]"
+              >
+                {isSearching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    className="w-5 h-5"
+                  >
+                    <path 
+                      d="M22 2L11 13"
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                    <path 
+                      d="M22 2L15 22L11 13L2 9L22 2Z" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

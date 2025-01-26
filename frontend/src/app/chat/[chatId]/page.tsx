@@ -89,46 +89,80 @@ export default function ChatPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-3xl mx-auto h-[calc(100vh-4rem)] flex flex-col">
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.map((message, index) => (
-          <SearchResult
-            key={index}
-            query={message.query}
-            response={message.response}
-            isHistory={index < messages.length - 1}
-          />
-        ))}
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
+      {/* Messages container with scrollbar */}
+      <div className="flex-1 overflow-y-auto px-4">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto py-8 space-y-8">
+            {messages.map((message, index) => (
+              <SearchResult
+                key={index}
+                query={message.query}
+                response={message.response}
+                isHistory={true}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t bg-white">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isSending}
-          />
-          <Button type="submit" disabled={isSending || !input.trim()}>
-            {isSending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              'Send'
-            )}
-          </Button>
+      {/* Input form fixed at bottom */}
+      <div className="border-t bg-white">
+        <div className="max-w-3xl mx-auto">
+          <form onSubmit={handleSubmit} className="p-4">
+            <div className="flex gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                }}
+                placeholder="Type your message..."
+                className="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+                rows={1}
+                style={{ minHeight: '44px' }}
+                disabled={isSending}
+              />
+              <Button 
+                type="submit" 
+                disabled={isSending || !input.trim()}
+                className="h-auto min-h-[44px] px-6"
+              >
+                {isSending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    className="w-5 h-5"
+                  >
+                    <path 
+                      d="M22 2L11 13"
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                    <path 
+                      d="M22 2L15 22L11 13L2 9L22 2Z" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

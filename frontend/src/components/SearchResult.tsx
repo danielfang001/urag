@@ -104,7 +104,7 @@ export function SearchResult({ query, response, isHistory = false }: SearchResul
             {!isTyping && topSources.length > 0 && (
               <div className="mt-4">
                 <h3 className="text-sm font-semibold text-gray-600 mb-2">
-                  Document Sources:
+                  Document Sources (Top 2):
                 </h3>
                 <div className="space-y-2">
                   {topSources.map((source, index) => (
@@ -131,7 +131,7 @@ export function SearchResult({ query, response, isHistory = false }: SearchResul
             {!isTyping && topWebSources.length > 0 && (
               <div className="mt-4">
                 <h3 className="text-sm font-semibold text-gray-600 mb-2">
-                  Web Sources:
+                  Web Sources (Top 2):
                 </h3>
                 <div className="space-y-2">
                   {topWebSources.map((source, index) => (

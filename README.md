@@ -5,12 +5,11 @@ URAG is a desktop application that enables users to create their personal docume
 ## Features
 
 - 🔒 **Fully Local Operation**: All data stays on your machine
-- 📄 **Multi-Format Support**: Import PDF, TXT, DOCX, and Markdown files
-- 🔍 **Semantic Search**: Find documents based on meaning, not just keywords
 - 💬 **Natural Language Queries**: Ask questions about your documents
-- 🔑 **BYO API Key**: Use your own OpenAI API key
+- 🔑 **BYO API Key**: Use your own API keys
 - 📊 **Vector Database**: Efficient similarity search using Milvus
-- 🎯 **Source Citations**: Get references to specific documents and passages
+- 🔍 **Web Enhanced**: Use web search results to render your knowledge base
+- 🎯 **Source Citations**: Get references to specific documents and websites
 - 📓 **Easy Use**: Runs like Jupyter Notebook
 
 ## Tech Stack
@@ -18,16 +17,18 @@ URAG is a desktop application that enables users to create their personal docume
 ### Backend
 - **FastAPI**: Modern, fast web framework for building APIs
 - **Python 3.12+**: Core application logic
-- **LangChain**: Document processing and LLM integration
+- **LangChain**: Document processing
 - **Milvus**: Vector database for semantic search
+- **Exa.ai**: Web search engine
 - **OpenAI API**: For embeddings and query processing
 - **PyPDF2**: PDF processing
 - **python-docx**: DOCX processing
 
 ### Document Processing Pipeline
 - Text extraction and chunking
-- Embedding generation using OpenAI's text-embedding-3-small model
+- Embedding generation using embedding model
 - Vector storage and retrieval using Milvus
+- Web search rendering when automatically decided necessary
 
 ## Installation
 
