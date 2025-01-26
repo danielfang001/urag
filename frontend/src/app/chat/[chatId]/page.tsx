@@ -30,7 +30,7 @@ export default function ChatPage() {
     try {
       console.log('Loading chat with ID:', chatId);
       const chat = await api.getChat(chatId);
-      // Convert chat messages to SearchResult format
+      console.log('HERE IS THE CHAT before formatting:', chat);
       const formattedMessages = chat.messages.reduce<Message[]>((acc, msg, index, arr) => {
         if (msg.role === 'user') {
           const nextMsg = arr[index + 1];
@@ -45,6 +45,15 @@ export default function ChatPage() {
                     score: source.score,
                     filename: source.filename
                   };
+                }),
+                web_sources: (nextMsg.web_sources || []).map(source => {
+                  return {
+                    text: source.text,
+                    title: source.title,
+                    url: source.url,
+                    score: source.score,
+                    highlights: source.highlights || []
+                  };
                 })
               }
             });
@@ -52,6 +61,7 @@ export default function ChatPage() {
         }
         return acc;
       }, []);
+      console.log('Formatted messages:', formattedMessages); // Debug log
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Failed to load chat:', error);
@@ -69,10 +79,7 @@ export default function ChatPage() {
       const response = await api.searchDocuments(input, chatId, false);  // false for follow-up
       setMessages(prev => [...prev, {
         query: input,
-        response: {
-          answer: response.answer,
-          sources: response.sources
-        }
+        response: response
       }]);
       setInput('');
     } catch (error) {

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2, User, Bot } from "lucide-react";
 import { api } from '@/api';
 import { useToast } from "@/hooks/use-toast";
-import { SearchResult } from '@/components/SearchResult';
 import { SearchResponse } from '@/api';
 import { useRouter } from 'next/navigation';
 
@@ -21,12 +20,10 @@ export function SearchSection() {
 
     setIsSearching(true);
     try {
-      // Search the documents
-      const searchResponse: SearchResponse = await api.searchDocuments(query, undefined, true);  // true for homepage/initial search
+      const searchResponse: SearchResponse = await api.searchDocuments(query, undefined, true);
       
-      console.log('Search response:', searchResponse); 
+      console.log('Full search response:', searchResponse);
       
-      // Directly navigate to chat with ID instead of storing in localStorage
       if (searchResponse.chat_id) {
         router.push(`/chat/${searchResponse.chat_id}`);
       } else {

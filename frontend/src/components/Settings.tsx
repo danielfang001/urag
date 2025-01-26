@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 const MODEL_OPTIONS = [
   { value: 'gpt-4-turbo-2024-04-09', label: 'GPT-4 Turbo' },
@@ -30,21 +31,37 @@ const MODEL_OPTIONS = [
 export function Settings() {
   const [isOpen, setIsOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [exaKey, setExaKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('gpt-3.5-turbo');
+  const [enableWebSearch, setEnableWebSearch] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const storedKey = localStorage.getItem('openai_api_key');
+    const storedExaKey = localStorage.getItem('exa_api_key');
     const storedModel = localStorage.getItem('openai_model');
+    const storedWebSearch = localStorage.getItem('enable_web_search');
+    
     if (storedKey) setApiKey(storedKey);
+    if (storedExaKey) setExaKey(storedExaKey);
     if (storedModel) setSelectedModel(storedModel);
+    if (storedWebSearch) setEnableWebSearch(storedWebSearch === 'true');
   }, []);
 
   const handleSave = () => {
     if (!apiKey.trim()) {
       toast({
         title: "Error",
-        description: "API key cannot be empty",
+        description: "OpenAI API key cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (enableWebSearch && !exaKey.trim()) {
+      toast({
+        title: "Error",
+        description: "Exa.ai API key is required for web search",
         variant: "destructive",
       });
       return;
@@ -52,6 +69,9 @@ export function Settings() {
 
     localStorage.setItem('openai_api_key', apiKey.trim());
     localStorage.setItem('openai_model', selectedModel);
+    localStorage.setItem('exa_api_key', exaKey.trim());
+    localStorage.setItem('enable_web_search', enableWebSearch.toString());
+    
     setIsOpen(false);
     toast({
       title: "Success",
@@ -87,6 +107,7 @@ export function Settings() {
               Your API key will be stored locally in your browser
             </p>
           </div>
+          
           <div className="space-y-2">
             <label className="text-sm font-medium">Model</label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
@@ -101,10 +122,36 @@ export function Settings() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Enable Web Search</label>
+              <Switch
+                checked={enableWebSearch}
+                onCheckedChange={setEnableWebSearch}
+              />
+            </div>
             <p className="text-xs text-gray-500">
-              Select the OpenAI model to use for responses
+              Allow the assistant to search the web for additional context
             </p>
           </div>
+
+          {enableWebSearch && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Exa.ai API Key</label>
+              <Input
+                type="password"
+                value={exaKey}
+                onChange={(e) => setExaKey(e.target.value)}
+                placeholder="..."
+              />
+              <p className="text-xs text-gray-500">
+                Required for web search functionality
+              </p>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel

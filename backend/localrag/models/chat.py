@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from bson import ObjectId
 
@@ -8,10 +8,18 @@ class Source(BaseModel):
     score: float = Field(default=1.0)
     filename: str
 
+class WebSource(BaseModel):
+    score: Optional[float] = Field(default=1.0)
+    title: str
+    url: str
+    text: str
+    highlights: List[str] = Field(default_factory=list)
+
 class Message(BaseModel):
     role: str
     content: str # response content
     sources: List[Source] = Field(default_factory=list)
+    web_sources: List[WebSource] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class Chat(BaseModel):

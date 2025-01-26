@@ -28,14 +28,10 @@ async def get_chat_history():
     logger.info("Starting get_chat_history endpoint")
     try:
         raw_chats = await get_chats()
-        # Convert MongoDB documents to Pydantic models
         chats = []
         for chat_doc in raw_chats:
             try:
-                # Convert ObjectId to string
                 chat_doc['id'] = str(chat_doc.pop('_id'))
-                
-                # Convert message content to string if it's a dict
                 if 'messages' in chat_doc:
                     for msg in chat_doc['messages']:
                         if isinstance(msg.get('content'), dict):
@@ -48,8 +44,6 @@ async def get_chat_history():
                 logger.error(f"Error processing chat document: {str(e)}")
                 logger.debug(f"Problematic chat doc: {chat_doc}")
                 continue
-                
-        logger.info(f"Retrieved {len(chats)} chats")
         return chats
     except Exception as e:
         logger.error(f"Error in get_chat_history: {str(e)}", exc_info=True)

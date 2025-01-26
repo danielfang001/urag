@@ -6,6 +6,13 @@ interface ChatMessage {
     score: number;
     filename: string;
   }>;
+  web_sources?: Array<{
+    score: number;
+    title: string;
+    url: string;
+    text: string;
+    highlights: string[];
+  }>;
   created_at?: string;
 }
 
@@ -32,20 +39,17 @@ export interface SearchResponse {
     filename: string;
     score: number;
   }>;
+  web_sources?: Array<{
+    score: number;
+    title: string;
+    url: string;
+    text: string;
+    highlights: string[];
+  }>;
   chat_id?: string;
 }
 
 export const api = {
-  // Chat operations
-  // async createChat(title: string): Promise<{ id: string }> {
-  //   const response = await fetch('/api/chat', {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({ title }),
-  //   });
-  //   if (!response.ok) throw new Error('Failed to create chat');
-  //   return response.json();
-  // },
 
   async getChats(): Promise<Chat[]> {
     const response = await fetch('/api/chat');
@@ -85,7 +89,6 @@ export const api = {
     return response.json();
   },
 
-  // Document operations
   async getDocuments(): Promise<Document[]> {
     const response = await fetch('/api/documents');
     if (!response.ok) {
@@ -158,21 +161,34 @@ export const api = {
     }
   },
 
-  // Search operations
   async searchDocuments(query: string, chatId?: string, fromHomePage: boolean = false): Promise<SearchResponse> {
     const apiKey = localStorage.getItem('openai_api_key');
     const model = localStorage.getItem('openai_model') || 'gpt-3.5-turbo';
+    const exaKey = localStorage.getItem('exa_api_key');
+    const enableWebSearch = localStorage.getItem('enable_web_search') === 'true';
+    
     if (!apiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
+    if (enableWebSearch && !exaKey) {
+      throw new Error('Exa.ai API key is required for web search');
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-OpenAI-Key': apiKey,
+      'X-OpenAI-Model': model,
+    };
+
+    if (enableWebSearch) {
+      headers['X-Exa-Key'] = exaKey!;
+      headers['X-Enable-Web-Search'] = 'true';
+    }
+
     const response = await fetch('/api/search', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-OpenAI-Key': apiKey,
-        'X-OpenAI-Model': model
-      },
+      headers,
       body: JSON.stringify({
         query,
         chatId,
