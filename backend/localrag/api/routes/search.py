@@ -67,7 +67,7 @@ async def search_documents(
                     
                     Your response should be in JSON format:
                     {
-                        "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
+                        "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
                         "used_context": boolean (true/false) indicating if you used the additional context,
                     }"""},
                     {"role": "user", "content": f"Web context:\n{web_ctx}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
@@ -79,7 +79,7 @@ async def search_documents(
                     
                     Your response should be in JSON format:
                     {
-                        "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
+                        "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
                         "used_context": boolean (true/false) indicating if you used the context
                     }"""},
                     {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
@@ -94,7 +94,7 @@ async def search_documents(
                     
                     Your response should be in JSON format:
                     {
-                        "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
+                        "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
                         "used_context": boolean (true/false) indicating if you used the additional context,
                     }"""},
                     {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nWeb context:\n{web_ctx}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
@@ -107,7 +107,7 @@ async def search_documents(
                     
                 Your response should be in JSON format:
                 {
-                    "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format",
+                    "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
                     "used_context": boolean (true/false) indicating if you used the additional context (not the conversation history, if you used the conversation history, it should be false)
                 }"""},
                 {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}

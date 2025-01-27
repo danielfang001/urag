@@ -11,6 +11,7 @@ import { api } from '@/api';
 interface Message {
   query: string;
   response: SearchResponse;
+  isNew?: boolean;
 }
 
 export default function ChatPage() {
@@ -21,6 +22,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const router = useRouter();
+  const [isNewChat, setIsNewChat] = useState(false);
 
   useEffect(() => {
     loadChat();
@@ -31,6 +33,11 @@ export default function ChatPage() {
       console.log('Loading chat with ID:', chatId);
       const chat = await api.getChat(chatId);
       console.log('HERE IS THE CHAT before formatting:', chat);
+      
+      // Check if this is a new chat (only has one message pair)
+      const isNew = chat.messages.length <= 2;
+      setIsNewChat(isNew);
+
       const formattedMessages = chat.messages.reduce<Message[]>((acc, msg, index, arr) => {
         if (msg.role === 'user') {
           const nextMsg = arr[index + 1];
@@ -39,29 +46,27 @@ export default function ChatPage() {
               query: msg.content,
               response: {
                 answer: nextMsg.content,
-                sources: (nextMsg.sources || []).map(source => {
-                  return {
-                    content: source.content,
-                    score: source.score,
-                    filename: source.filename
-                  };
-                }),
-                web_sources: (nextMsg.web_sources || []).map(source => {
-                  return {
-                    text: source.text,
-                    title: source.title,
-                    url: source.url,
-                    score: source.score,
-                    highlights: source.highlights || []
-                  };
-                })
-              }
+                sources: (nextMsg.sources || []).map(source => ({
+                  content: source.content,
+                  score: source.score,
+                  filename: source.filename
+                })),
+                web_sources: (nextMsg.web_sources || []).map(source => ({
+                  text: source.text,
+                  title: source.title,
+                  url: source.url,
+                  score: source.score,
+                  highlights: source.highlights || []
+                }))
+              },
+              isNew: isNew
             });
           }
         }
         return acc;
       }, []);
-      console.log('Formatted messages:', formattedMessages); // Debug log
+      
+      console.log('Formatted messages:', formattedMessages);
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Failed to load chat:', error);
@@ -79,7 +84,8 @@ export default function ChatPage() {
       const response = await api.searchDocuments(input, chatId, false);  // false for follow-up
       setMessages(prev => [...prev, {
         query: input,
-        response: response
+        response: response,
+        isNew: true
       }]);
       setInput('');
     } catch (error) {
@@ -104,7 +110,7 @@ export default function ChatPage() {
                 key={index}
                 query={message.query}
                 response={message.response}
-                isHistory={true}
+                isHistory={!message.isNew}
               />
             ))}
           </div>

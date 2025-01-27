@@ -9,6 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SearchResponse } from '@/api';
+import { TypingAnimation } from './TypingAnimation';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface SearchResultProps {
   query: string;
@@ -17,8 +20,9 @@ interface SearchResultProps {
 }
 
 export function SearchResult({ query, response, isHistory = false }: SearchResultProps) {
-  const [displayedAnswer, setDisplayedAnswer] = useState(isHistory ? response.answer || '' : '');
+  const [displayedAnswer, setDisplayedAnswer] = useState(isHistory ? response.answer : '');
   const [isTyping, setIsTyping] = useState(!isHistory);
+  const [showSources, setShowSources] = useState(false);
   const [selectedSource, setSelectedSource] = useState<{
     content: string;
     filename: string;
@@ -37,48 +41,51 @@ export function SearchResult({ query, response, isHistory = false }: SearchResul
     .sort((a, b) => b.score - a.score)
     .slice(0, 2);
 
+  useEffect(() => {
+    if (!isHistory && response.answer) {
+      let currentIndex = 0;
+      let mounted = true;
+      const hasAnySources = (response.sources?.length || 0) > 0 || (response.web_sources?.length || 0) > 0;
+      setShowSources(false);
+
+      const timer = setInterval(() => {
+        if (!mounted) return;
+
+        if (currentIndex < response.answer.length) {
+          setDisplayedAnswer(response.answer.substring(0, currentIndex + 1));
+          currentIndex++;
+        } else {
+          setIsTyping(false);
+          if (hasAnySources) {
+            setTimeout(() => {
+              if (mounted) {
+                setShowSources(true);
+              }
+            }, 100);
+          }
+          clearInterval(timer);
+        }
+      }, 20);
+
+      return () => {
+        mounted = false;
+        clearInterval(timer);
+        setDisplayedAnswer(response.answer);
+        setIsTyping(false);
+        if (hasAnySources) {
+          setShowSources(true);
+        }
+      };
+    } else if (isHistory) {
+      const hasAnySources = (response.sources?.length || 0) > 0 || (response.web_sources?.length || 0) > 0;
+      setShowSources(hasAnySources);
+    }
+  }, [response.answer, isHistory]);
+
   const truncateText = (text: string) => {
     if (text.length <= 150) return text;
     return text.slice(0, 150) + '...';
   };
-
-
-  useEffect(() => {
-    // If it's a history message or no answer, display immediately
-    if (isHistory || !response.answer) {
-      setDisplayedAnswer(response.answer || '');
-      setIsTyping(false);
-      return;
-    }
-
-    // Reset for new messages
-    setDisplayedAnswer('');
-    setIsTyping(true);
-
-    const answer = response.answer;
-    let currentIndex = 0;
-    let mounted = true;
-
-    const timer = setInterval(() => {
-      if (!mounted) return;
-
-      if (currentIndex < answer.length) {
-        setDisplayedAnswer(answer.substring(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        setIsTyping(false);
-        clearInterval(timer);
-      }
-    }, 20);
-
-    return () => {
-      mounted = false;
-      clearInterval(timer);
-      // Ensure full answer is displayed when unmounting
-      setDisplayedAnswer(answer);
-      setIsTyping(false);
-    };
-  }, [response.answer, isHistory]);
 
   return (
     <div className="space-y-6">
@@ -95,13 +102,15 @@ export function SearchResult({ query, response, isHistory = false }: SearchResul
         <div className="flex gap-4 p-4 bg-gray-100 rounded-lg items-start max-w-[80%]">
           <Bot className="h-6 w-6 text-blue-600 flex-shrink-0" />
           <div className="space-y-4 flex-1">
-            <p className="text-gray-800 whitespace-pre-wrap min-h-[1.5rem]">
-              {displayedAnswer}
+            <div className="markdown text-gray-800">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {displayedAnswer}
+              </ReactMarkdown>
               {isTyping && <span className="animate-pulse">▊</span>}
-            </p>
+            </div>
 
             {/* Document Sources Section */}
-            {!isTyping && topSources.length > 0 && (
+            {showSources && topSources.length > 0 && (
               <div className="mt-4">
                 <h3 className="text-sm font-semibold text-gray-600 mb-2">
                   Document Sources (Top 2):
@@ -128,7 +137,7 @@ export function SearchResult({ query, response, isHistory = false }: SearchResul
             )}
 
             {/* Web Sources Section */}
-            {!isTyping && topWebSources.length > 0 && (
+            {showSources && topWebSources.length > 0 && (
               <div className="mt-4">
                 <h3 className="text-sm font-semibold text-gray-600 mb-2">
                   Web Sources (Top 2):
