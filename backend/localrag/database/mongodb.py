@@ -2,6 +2,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from ..config import get_settings
 from bson import ObjectId
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -57,6 +60,7 @@ async def delete_chat(chat_id: str):
     await collection.delete_one({"_id": ObjectId(chat_id)})
 
 async def search_chats(query: str, limit: int = 10):
+    logger.info(f"Searching for '{query}' with limit {limit}")
     collection = await get_chat_collection()
     
     pipeline = [

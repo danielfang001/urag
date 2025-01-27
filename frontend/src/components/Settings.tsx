@@ -92,7 +92,7 @@ export function Settings() {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>LLM Settings</DialogTitle>
+          <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
@@ -133,7 +133,7 @@ export function Settings() {
               />
             </div>
             <p className="text-xs text-gray-500">
-              Allow the assistant to search the web for additional context
+              Allow the assistant to search the web for additional context, this will increase search latency but for greater goods
             </p>
           </div>
 

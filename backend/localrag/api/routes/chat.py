@@ -48,6 +48,14 @@ async def get_chat_history():
     except Exception as e:
         logger.error(f"Error in get_chat_history: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/search")
+async def search_chat_history(
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(10, ge=1, le=50, description="Maximum number of results")
+):
+    results = await search_chats(q, limit)
+    return results
 
 @router.get("/{chat_id}")
 async def get_chat_by_id(chat_id: str):
@@ -94,25 +102,17 @@ async def delete_all_chats():
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) 
+    
+
 
 @router.delete("/{chat_id}")
 async def delete_chat_by_id(chat_id: str):
     try:
-        await delete_chat(chat_id)  # This is the MongoDB function, not the route
+        await delete_chat(chat_id)
         return {"success": True}
     except Exception as e:
         logger.error(f"Error deleting chat: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/search/")
-async def search_chat_history(
-    q: str = Query(..., description="Search query"),
-    limit: int = Query(10, ge=1, le=50, description="Maximum number of results")
-):
-    """
-    Search through chat history by title and message content.
-    Returns matching chats with relevant message previews.
-    """
-    results = await search_chats(q, limit)
-    return results
+
 
