@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request, Header
 from ...core.document_processor import DocumentProcessor
-from ...config import get_settings
 import logging
 from datetime import datetime
 import json
@@ -24,11 +23,50 @@ async def search_documents(
     with_web: Optional[bool] = Header(None, alias="X-Enable-Web-Search")
 ):
     try:
-        logger.info(f"Received search query: {query}, using model: {x_openai_model}")
+        references = query.get('references', [])
+        web_results = []
+        search_results = []
+
+        need_web_search = with_web or any(ref['type'] == 'web' for ref in references)
         
         engine = request.app.state.vector_db
+        web_search = WebSearchEngine(x_openai_key, x_exa_key) if need_web_search else None
         processor = DocumentProcessor(x_openai_key)
-        web_engine = WebSearchEngine(x_openai_key, x_exa_key)
+        query_embedding = await processor.get_embedding(query['query'])
+        exclude = []
+        web_need = False
+        
+        if references:
+            for ref in references:
+                if ref['type'] == 'web' and web_search:
+                    web_result = await web_search.search_url(ref['source'])
+                    if web_result:
+                        web_results.extend(web_result)
+                elif ref['type'] == 'file':
+                    file_results = engine.similarity_search(
+                        query_embedding=query_embedding,
+                        metadata_filter=f'filename == "{ref["source"]}"'
+                    )
+                    exclude.extend(ref['source'])
+                    if file_results:
+                        search_results.extend(file_results)
+
+
+        if not references or len(search_results) < 3:
+            additional_results = engine.similarity_search(query_embedding=query_embedding)
+            search_results.extend(additional_results)
+
+        if with_web and not any(ref['type'] == 'web' for ref in references):
+            context = "\n".join(r['content'] for r in search_results)
+            web_need = web_search.web_needed(query['query'], context).get("need_web", False)
+            if web_need:
+                additional_web_results = await web_search.search_web(query['query'])
+                web_results.extend(additional_web_results)
+
+        logger.info(f"Received search query: {query}, using model: {x_openai_model}")
+        
+        
+        
         
         chat_history = ""
         chat_id = None
@@ -44,19 +82,10 @@ async def search_documents(
                 logger.error(f"Error getting chat history: {e}")
                 pass
         
-        query_embedding = await processor.get_embedding(query["query"])
-        search_results = engine.similarity_search(query_embedding, limit=5)
+        
         context = "\n\n".join([result["content"] for result in search_results])
         
-        web_results = []
-        web_need = False
-        if with_web:
-            web_need = web_engine.web_needed(query["query"], context)
-            logger.info(f"web_need: {web_need}")
-            if web_need:
-                web_results = web_engine.search_web(query["query"])
-                logger.info(f"web_results: {web_results}")
-                web_ctx = "\n\n".join([result["text"] for result in web_results])
+        web_ctx = "\n\n".join([result["text"] for result in web_results])
 
         if query.get('initial', False):
             if web_need:

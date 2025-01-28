@@ -53,4 +53,4 @@ class WebSearchEngine:
             response_format={"type": "json_object"}
         )
         response_content = json.loads(response.choices[0].message.content)
-        return response_content.get("need_web", False)
+        return response_content

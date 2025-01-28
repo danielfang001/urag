@@ -161,7 +161,12 @@ export const api = {
     }
   },
 
-  async searchDocuments(query: string, chatId?: string, fromHomePage: boolean = false): Promise<SearchResponse> {
+  async searchDocuments(
+    query: string, 
+    chatId?: string, 
+    fromHomePage: boolean = false,
+    references?: Array<{ type: 'web' | 'file'; source: string; }>
+  ): Promise<SearchResponse> {
     const apiKey = localStorage.getItem('openai_api_key');
     const model = localStorage.getItem('openai_model') || 'gpt-3.5-turbo';
     const exaKey = localStorage.getItem('exa_api_key');
@@ -192,7 +197,8 @@ export const api = {
       body: JSON.stringify({
         query,
         chatId,
-        initial: fromHomePage
+        initial: fromHomePage,
+        references
       }),
     });
 
