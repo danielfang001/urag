@@ -24,22 +24,21 @@ async def search_documents(
 ):
     try:
         references = query.get('references', [])
+        logger.info(f"References: {references}")
         web_results = []
         search_results = []
-
-        need_web_search = with_web or any(ref['type'] == 'web' for ref in references)
         
         engine = request.app.state.vector_db
-        web_search = WebSearchEngine(x_openai_key, x_exa_key) if need_web_search else None
+        web_search = WebSearchEngine(x_openai_key, x_exa_key) if with_web or any(ref['type'] == 'web' for ref in references) else None
         processor = DocumentProcessor(x_openai_key)
         query_embedding = await processor.get_embedding(query['query'])
         exclude = []
         web_need = False
-        
+
         if references:
             for ref in references:
                 if ref['type'] == 'web' and web_search:
-                    web_result = await web_search.search_url(ref['source'])
+                    web_result = await web_search.search_url([ref['source']])
                     if web_result:
                         web_results.extend(web_result)
                 elif ref['type'] == 'file':
@@ -56,15 +55,18 @@ async def search_documents(
             additional_results = engine.similarity_search(query_embedding=query_embedding)
             search_results.extend(additional_results)
 
+
+
+        context = "\n\n".join([result["content"] for result in search_results])
+        user_defined_web_context = "\n\n".join([result["text"] for result in web_results])
+
         if with_web and not any(ref['type'] == 'web' for ref in references):
-            context = "\n".join(r['content'] for r in search_results)
-            web_need = web_search.web_needed(query['query'], context).get("need_web", False)
+            web_need = await web_search.web_needed(query['query'], context, user_defined_web_context)
             if web_need:
                 additional_web_results = await web_search.search_web(query['query'])
                 web_results.extend(additional_web_results)
 
-        logger.info(f"Received search query: {query}, using model: {x_openai_model}")
-        
+        web_ctx = "\n\n".join([result["text"] for result in web_results])
         
         
         
@@ -88,35 +90,37 @@ async def search_documents(
         web_ctx = "\n\n".join([result["text"] for result in web_results])
 
         if query.get('initial', False):
-            if web_need:
+            if web_results:
                  messages = [
-                    {"role": "system", "content": """You are a helpful assistant. You have access to some web sources, which you can assume are part of your internal knowledge. 
+                    {"role": "system", "content": """You are a helpful assistant who give credit to the sources you used to answer the question. You have access to some web sources, which you can assume are part of your internal knowledge. 
                     Analyze if the additional context is needed to answer the question. If the question can be answered without addiitonal context (like greetings or general queries), 
                     ignore the context completely.
                     
                     Your response should be in JSON format:
                     {
                         "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
-                        "used_context": boolean (true/false) indicating if you used the additional context,
+                        "used_web": boolean (true/false) indicating if you used the web context for your answer
+                        "used_context": boolean (true/false) indicating if you used the additional context for your answer
+                        
                     }"""},
                     {"role": "user", "content": f"Web context:\n{web_ctx}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
                 ]
             else:
                 messages = [
-                    {"role": "system", "content": """You are a helpful assistant. Analyze if the provided context is needed to answer the question.
+                    {"role": "system", "content": """You are a helpful assistant who give credit to the sources you used to answer the question. Analyze if the provided context is needed to answer the question.
                     If the question can be answered without the context (like greetings or general queries), ignore the context completely.
                     
                     Your response should be in JSON format:
                     {
                         "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
-                        "used_context": boolean (true/false) indicating if you used the context
+                        "used_context": boolean (true/false) indicating if you used the context for your answer
                     }"""},
                     {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
                 ]
         else:
-            if web_need:
+            if web_results:
                 messages = [
-                    {"role": "system", "content": """You are a helpful assistant. You have access to both previous conversation history and some web sources, 
+                    {"role": "system", "content": """You are a helpful assistant who give credit to the sources (not the conversation history) you used to answer the question. You have access to both previous conversation history and some web sources, 
                     which you can assume are part of your internal knowledge. Use the conversation history to maintain continuity in the discussion.
                     Analyze if the additional context is needed to answer the question and indicate this in your response.
                     If the question can be answered without additional context (like greetings or general queries), ignore the context completely.
@@ -124,24 +128,25 @@ async def search_documents(
                     Your response should be in JSON format:
                     {
                         "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
-                        "used_context": boolean (true/false) indicating if you used the additional context,
+                        "used_web": boolean (true/false) indicating if you used the web context for your answer
+                        "used_context": boolean (true/false) indicating if you used the additional context for your answer
                     }"""},
                     {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nWeb context:\n{web_ctx}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
                 ]
             else:
                 messages = [
-                    {"role": "system", "content": """You are a helpful assistant. You have access to both previous conversation history and additional context.
+                    {"role": "system", "content": """You are a helpful assistant who give credit to the sources (not the conversation history) you used to answer the question. You have access to both previous conversation history and additional context.
                     Use the conversation history to maintain continuity in the discussion and you can assume this is your knowledge.
                     For the additional context, analyze if it is needed to answer the question and indicate this in your response.
                     
                 Your response should be in JSON format:
                 {
                     "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
-                    "used_context": boolean (true/false) indicating if you used the additional context (not the conversation history, if you used the conversation history, it should be false)
+                    "used_context": boolean (true/false) indicating if you used the additional context for your answer (not the conversation history, if you used the conversation history, it should be false)
                 }"""},
                 {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
             ]
-        
+        logger.info(f"Messages: {messages}")
         completion = processor.client.chat.completions.create(
             model=x_openai_model,
             messages=messages,
@@ -167,7 +172,7 @@ async def search_documents(
                         "role": "assistant",
                         "content": response_content["answer"],
                         "sources": search_results if response_content.get("used_context", False) else [],
-                        "web_sources": web_results if web_need else [],
+                        "web_sources": web_results if response_content.get("used_web", False) else [],
                         "created_at": datetime.utcnow()
                     }
                 ],
@@ -188,7 +193,7 @@ async def search_documents(
                     "role": "assistant",
                     "content": response_content["answer"],
                     "sources": search_results if response_content.get("used_context", False) else [],
-                    "web_sources": web_results if web_need else [],
+                    "web_sources": web_results if response_content.get("used_web", False) else [],
                     "created_at": datetime.utcnow()
                 }
             ]
@@ -203,7 +208,7 @@ async def search_documents(
             "chat_id": str(chat_id),
             "answer": response_content["answer"].strip(),
             "sources": search_results if response_content.get("used_context", False) else [],
-            "web_sources": web_results if web_need else []
+            "web_sources": web_results if response_content.get("used_web", False) else []
         }
         
     except Exception as e:
