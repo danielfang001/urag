@@ -100,10 +100,10 @@ async def search_documents(
                     {
                         "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
                         "used_web": boolean (true/false) indicating if you used the web context for your answer
-                        "used_context": boolean (true/false) indicating if you used the additional context for your answer
+                        "used_context": boolean (true/false) indicating if you used the document context for your answer
                         
                     }"""},
-                    {"role": "user", "content": f"Web context:\n{web_ctx}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
+                    {"role": "user", "content": f"Web context:\n{web_ctx}\n\nDocument context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
                 ]
             else:
                 messages = [
@@ -129,9 +129,9 @@ async def search_documents(
                     {
                         "answer": "your response to the user, answer should be a string/plain text, not dictionary or json format, you should always take advantage of markdown formatting for better readability",
                         "used_web": boolean (true/false) indicating if you used the web context for your answer
-                        "used_context": boolean (true/false) indicating if you used the additional context for your answer
+                        "used_context": boolean (true/false) indicating if you used the document context for your answer
                     }"""},
-                    {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nWeb context:\n{web_ctx}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
+                    {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nWeb context:\n{web_ctx}\n\nDocument context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
                 ]
             else:
                 messages = [
@@ -146,7 +146,6 @@ async def search_documents(
                 }"""},
                 {"role": "user", "content": f"Conversation history:\n{chat_history}\n\nAdditional context:\n{context}\n\nQuestion: {query['query']}\n\nAnswer in the specified JSON format:"}
             ]
-        logger.info(f"Messages: {messages}")
         completion = processor.client.chat.completions.create(
             model=x_openai_model,
             messages=messages,
@@ -158,7 +157,6 @@ async def search_documents(
         
         logger.info(f"Response content: {response_content}")
         
-        # For initial queries, create new chat
         if query.get('initial', False):
             chat = {
                 "title": query["query"][:50] + "...",
@@ -180,7 +178,6 @@ async def search_documents(
             }
             logger.info(f"HERE IS THE CHAT before creating: {chat}")
             chat_id = await create_chat(chat)
-        # For follow-up questions, update existing chat
         elif 'chatId' in query and query['chatId']:
             chat_id = query['chatId']
             new_messages = [
@@ -200,9 +197,6 @@ async def search_documents(
             await update_chat(chat_id, new_messages)
         else:
             raise HTTPException(status_code=400, detail="Missing chatId for follow-up question")
-        
-        logger.info(f"web_need: {web_need}")
-        logger.info(f"web_results: {web_results}")
         
         return {
             "chat_id": str(chat_id),

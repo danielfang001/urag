@@ -37,7 +37,6 @@ class UragEngine:
         
         ret = []
         for i in range(len(texts)):
-            logger.info(f"current loading text: {texts[i]}")
             ret.append(self.client.insert(collection_name=self.collection, data={
                 'filename': filenames[i],
                 'content': texts[i],
@@ -54,10 +53,7 @@ class UragEngine:
         try:
             state = self.client.get_load_state(self.collection)
             if not state or "state" not in state or state["state"] != LoadState.Loaded:
-                logger.info(f"Loading collection: {self.collection}")
                 self.client.load_collection(self.collection)
-
-            logger.info(f"Searching with parameters: limit={limit}, threshold={similarity_threshold}")
             res = self.client.search(
                 collection_name=self.collection,
                 data=[query_embedding],
@@ -81,8 +77,6 @@ class UragEngine:
                 content = hit['entity'].get('content', '')
                 score = hit['distance']
                 
-                logger.info(f"Match found - File: {filename}, Score: {score}")
-                logger.info(f"Content: {content[:200]}...")
                 
                 hits.append({
                     'content': content,

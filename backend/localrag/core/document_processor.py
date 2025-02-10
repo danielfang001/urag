@@ -36,9 +36,8 @@ class DocumentProcessor:
                 pages = []
                 for i, page in enumerate(pdf.pages):
                     text = page.extract_text()
-                    # Clean up the text
                     cleaned_text = self._clean_pdf_text(text)
-                    if cleaned_text.strip():  # Only add non-empty pages
+                    if cleaned_text.strip():  
                         pages.append({
                             'content': cleaned_text,
                             'page': i + 1
@@ -50,22 +49,11 @@ class DocumentProcessor:
             raise
 
     def _clean_pdf_text(self, text: str) -> str:
-        """Clean up PDF extracted text by handling common issues."""
-        # Replace multiple newlines with a single newline
         text = re.sub(r'\n\s*\n', '\n', text)
-        
-        # Remove single-word line breaks (common PDF extraction artifact)
         text = re.sub(r'(?<!\n)\n(?!\n)(?!\s*[-•\d])(?!\s*[A-Z][a-z])', ' ', text)
-        
-        # Join hyphenated words split across lines
         text = re.sub(r'(\w)-\n(\w)', r'\1\2', text)
-        
-        # Remove excessive whitespace
         text = ' '.join(text.split())
-        
-        # Add proper paragraph breaks
         text = text.replace('. ', '.\n')
-        
         return text
 
     def read_docx(self, file_path: Path) -> List[Dict]:
@@ -92,7 +80,6 @@ class DocumentProcessor:
 
         all_chunks = []
         for page in pages:
-            # Split the text into chunks
             # TODO: Add user defined chunk size and overlap
             text_chunks = self.text_splitter.split_text(page['content'])
             
@@ -122,10 +109,8 @@ class DocumentProcessor:
             logger.info(f"Processing file: {file_path}")
             chunks = self.load_document(file_path)
             
-            # Extract just the content for embedding
             texts = [chunk['content'] for chunk in chunks]
             
-            # Get embeddings
             embeddings = await self.embeddings.aembed_documents(texts)
             
             logger.info(f"Generated {len(embeddings)} embeddings")
@@ -139,7 +124,6 @@ class DocumentProcessor:
             with open(file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         except UnicodeDecodeError:
-            # If UTF-8 fails, try another common encoding
             with open(file_path, 'r', encoding='latin-1') as f:
                 return f.read()
 

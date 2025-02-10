@@ -12,12 +12,10 @@ from typing import Optional
 from localrag.core.document_processor import DocumentProcessor
 from localrag.config import get_settings
 
-# Load environment variables
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Configure upload directory with absolute path
 UPLOAD_DIR = Path(__file__).parent.parent.parent.parent / "data" / "documents"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -64,12 +62,10 @@ async def upload_document(
                 detail=f"Unsupported file type. Allowed types: {ALLOWED_EXTENSIONS}"
             )
         
-        # Get Milvus engine from app state
         engine = request.app.state.vector_db
 
         processor = DocumentProcessor(x_openai_key)
 
-        # Save file with original name first
         file_path = UPLOAD_DIR / file.filename
         content = await file.read()
         
@@ -83,7 +79,7 @@ async def upload_document(
             chunks = processor.load_document(file_path)
             logger.info(f"Generated {len(chunks)} chunks")
             
-            # Prepare metadata for each chunk
+
             metadata_list = []
             texts = []
             filenames = []
@@ -137,14 +133,11 @@ async def delete_document(
     request: Request
 ):
     try:
-        # Decode URL-encoded filename
         filename = unquote(filename)
         logger.info(f"Received delete request for document: {filename}")
         
-        # Get Milvus engine from app state
         engine = request.app.state.vector_db
         
-        # Delete from vector store using filename field
         logger.info(f"Deleting from vector store with filename: {filename}")
         try:
             success = engine.delete_by_filename(filename)
@@ -156,16 +149,13 @@ async def delete_document(
             logger.error(f"Error deleting from vector store: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
         
-        # Find and delete the file - check for any extension
         file_found = False
         for file_path in UPLOAD_DIR.glob("*"):
-            # Compare without extension
             if file_path.stem == filename:
                 logger.info(f"Found file to delete: {file_path}")
                 file_path.unlink()
                 file_found = True
                 break
-            # Also try with full filename in case it includes extension
             elif file_path.name == filename:
                 logger.info(f"Found file to delete (exact match): {file_path}")
                 file_path.unlink()
@@ -174,7 +164,6 @@ async def delete_document(
         
         if not file_found:
             logger.warning(f"No file found for document: {filename}")
-            # Don't raise an error since we already deleted from Milvus
         
         return {"status": "success", "message": f"Document {filename} deleted"}
         
@@ -187,7 +176,6 @@ async def delete_document(
 @router.get("/api/documents/{filename}/content")
 async def get_document_content(filename: str):
     try:
-        # Debug logging
         logger.info(f"Requested filename: {filename}")
         logger.info(f"Upload directory: {get_settings().upload_dir}")
         
